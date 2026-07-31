@@ -43,11 +43,12 @@ async def on_message(message):
         return
 
     try:
-        response = model.generate_content(
-            SYSTEM_PROMPT + "\n\nNgười dùng: " + user_message
-        )
+        response = client_ai.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=SYSTEM_PROMPT + "\n\nNgười dùng: " + user_message,
+)
 
-        await message.reply(response.text)
+await message.reply(response.text)
 
     except Exception as e:
         await message.reply(f"Lỗi: {e}")
