@@ -1,0 +1,2 @@
+# CloudAISMP
+Discord AI Bot
