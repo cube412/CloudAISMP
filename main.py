@@ -7,7 +7,7 @@ load_dotenv()
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
+print("Gemini Key:", GEMINI_API_KEY[:10] if GEMINI_API_KEY else "KHÔNG CÓ API KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 
 model = genai.GenerativeModel("gemini-2.5-flash")
