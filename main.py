@@ -43,14 +43,15 @@ async def on_message(message):
         return
 
     try:
-        response = client_ai.models.generate_content(
-    model="gemini-2.5-flash",
-    contents=SYSTEM_PROMPT + "\n\nNgười dùng: " + user_message,
-)
+        try:
+    response = client_ai.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=SYSTEM_PROMPT + "\n\nNgười dùng: " + user_message,
+    )
 
-await message.reply(response.text)
+    await message.reply(response.text if response.text else "Không có phản hồi từ AI.")
 
-    except Exception as e:
-        await message.reply(f"Lỗi: {e}")
+except Exception as e:
+    await message.reply(f"Lỗi: {e}")
 
 client.run(TOKEN)
