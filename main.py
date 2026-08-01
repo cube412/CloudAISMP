@@ -45,7 +45,7 @@ async def on_message(message):
 
     try:
         response = client_ai.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.5-flash-lite",
             contents=SYSTEM_PROMPT + "\n\nNgười dùng: " + user_message,
         )
 
