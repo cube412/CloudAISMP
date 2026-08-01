@@ -7,6 +7,7 @@ from minecraft import handle_log
 from commands import CloudCommands
 from dashboard import app
 import threading
+import os
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -84,7 +85,7 @@ async def on_message(message):
 threading.Thread(
     target=lambda: app.run(
         host="0.0.0.0",
-        port=8080,
+        port=int(os.environ.get("PORT", 8080))
         debug=False,
         use_reloader=False
     ),
