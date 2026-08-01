@@ -1,14 +1,15 @@
 import os
+import discord
 from google import genai
+from dotenv import load_dotenv
 
+load_dotenv()
+
+TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 client_ai = genai.Client(api_key=GEMINI_API_KEY)
 
-for m in client_ai.models.list():
-    print(m.name)
-
-exit()
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -19,9 +20,9 @@ Bạn là CloudAI, một trợ lý AI trên Discord.
 
 Quy tắc:
 - Luôn trả lời bằng tiếng Việt.
-- Thân thiện, ngắn gọn và dễ hiểu.
+- Trả lời thân thiện, ngắn gọn, dễ hiểu.
 - Rất giỏi về Minecraft, Paper, Spigot, plugin, LuckPerms, Geyser, ViaVersion...
-- Vẫn trả lời được mọi chủ đề khác.
+- Có thể trả lời mọi chủ đề khác.
 """
 
 @client.event
@@ -39,18 +40,23 @@ async def on_message(message):
     user_message = message.content.replace(f"<@{client.user.id}>", "").strip()
 
     if not user_message:
-        await message.reply("Xin chào! Hãy hỏi mình bất cứ điều gì nhé 😊")
+        await message.reply("👋 Xin chào! Hãy hỏi mình bất cứ điều gì nhé.")
         return
 
     try:
         response = client_ai.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model="gemini-flash-latest",
             contents=SYSTEM_PROMPT + "\n\nNgười dùng: " + user_message,
         )
 
-        await message.reply(response.text)
+        text = getattr(response, "text", None)
+
+        if not text:
+            text = "Xin lỗi, mình chưa tạo được câu trả lời."
+
+        await message.reply(text)
 
     except Exception as e:
-        await message.reply(f"Lỗi: {e}")
+        await message.reply(f"❌ Lỗi: {e}")
 
 client.run(TOKEN)
