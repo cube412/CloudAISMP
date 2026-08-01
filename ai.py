@@ -86,11 +86,17 @@ Nội dung file:
 {log_text}
 """
 
-Log:
+    try:
 
-{log_text}
-"""
+        response = client.models.generate_content(
+            model=AI_MODEL,
+            contents=prompt
+        )
 
+        return response.text
+
+    except Exception as e:
+        return str(e)
     try:
 
         response = client.models.generate_content(
