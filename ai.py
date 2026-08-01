@@ -68,15 +68,23 @@ async def ask_ai(user_id, question):
 async def analyze_log(log_text):
 
     prompt = f"""
-Đây là latest.log của Minecraft.
+Bạn là chuyên gia Minecraft.
+
+Đây là file cấu hình hoặc file log.
 
 Hãy:
 
-- Tìm ERROR
-- Tìm WARN
-- Tìm Exception
+- Phân tích file
+- Tìm lỗi
+- Tìm WARNING
+- Tìm plugin lỗi
 - Giải thích bằng tiếng Việt
 - Đưa cách sửa
+
+Nội dung file:
+
+{log_text}
+"""
 
 Log:
 
