@@ -3,42 +3,80 @@ from config import GEMINI_API_KEY, AI_MODEL
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
+memory = {}
+
 SYSTEM_PROMPT = """
 Bạn là CloudAI.
 
-- Luôn trả lời bằng tiếng Việt.
-- Thân thiện.
-- Chuyên gia Minecraft.
-- Giỏi Paper, Spigot, plugin, Geyser, LuckPerms...
+Luôn trả lời bằng tiếng Việt.
+
+Bạn là chuyên gia:
+
+- Minecraft
+- Paper
+- Spigot
+- Plugin
+- Discord
+- Python
+
+Trả lời ngắn gọn và dễ hiểu.
 """
 
-async def ask_ai(question):
+
+async def ask_ai(user_id, question):
+
+    if user_id not in memory:
+        memory[user_id] = []
+
+    history = memory[user_id]
+
+    prompt = SYSTEM_PROMPT + "\n\n"
+
+    for msg in history:
+        prompt += f"{msg['role']}: {msg['content']}\n"
+
+    prompt += f"Người dùng: {question}"
 
     try:
+
         response = client.models.generate_content(
             model=AI_MODEL,
-            contents=SYSTEM_PROMPT + "\n\nNgười dùng: " + question
+            contents=prompt
         )
 
-        if response.text:
-            return response.text
+        answer = response.text
 
-        return "❌ AI không trả lời."
+        history.append({
+            "role": "Người dùng",
+            "content": question
+        })
+
+        history.append({
+            "role": "CloudAI",
+            "content": answer
+        })
+
+        if len(history) > 20:
+            history[:] = history[-20:]
+
+        return answer
 
     except Exception as e:
-        return f"❌ Lỗi AI: {e}"
+        return f"Lỗi AI: {e}"
+
+
 async def analyze_log(log_text):
 
     prompt = f"""
-Bạn là chuyên gia Minecraft.
-
-Đây là latest.log của server.
+Đây là latest.log của Minecraft.
 
 Hãy:
-1. Tìm lỗi.
-2. Giải thích bằng tiếng Việt.
-3. Đưa cách sửa.
-4. Nếu có plugin lỗi hãy ghi tên plugin.
+
+- Tìm ERROR
+- Tìm WARN
+- Tìm Exception
+- Giải thích bằng tiếng Việt
+- Đưa cách sửa
 
 Log:
 
