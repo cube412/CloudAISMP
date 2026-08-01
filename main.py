@@ -1,62 +1,54 @@
-import os
 import discord
-from google import genai
-from dotenv import load_dotenv
-
-load_dotenv()
-
-TOKEN = os.getenv("DISCORD_TOKEN")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-client_ai = genai.Client(api_key=GEMINI_API_KEY)
+from discord.ext import commands
+from config import DISCORD_TOKEN
+from ai import ask_ai
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 
-client = discord.Client(intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
-SYSTEM_PROMPT = """
-Bạn là CloudAI, một trợ lý AI trên Discord.
 
-Quy tắc:
-- Luôn trả lời bằng tiếng Việt.
-- Trả lời thân thiện, ngắn gọn, dễ hiểu.
-- Rất giỏi về Minecraft, Paper, Spigot, plugin, LuckPerms, Geyser, ViaVersion...
-- Có thể trả lời mọi chủ đề khác.
-"""
-
-@client.event
+@bot.event
 async def on_ready():
-    print(f"Đã đăng nhập với tên: {client.user}")
+    print("=" * 40)
+    print(f"🤖 Đăng nhập thành công: {bot.user}")
+    print("=" * 40)
 
-@client.event
+    await bot.change_presence(
+        activity=discord.Activity(
+            type=discord.ActivityType.watching,
+            name="Cloud SMP | @CloudAI"
+        )
+    )
+
+    try:
+        synced = await bot.tree.sync()
+        print(f"✅ Đã đồng bộ {len(synced)} slash command")
+    except Exception as e:
+        print(e)
+
+
+@bot.event
 async def on_message(message):
     if message.author.bot:
         return
 
-    if client.user not in message.mentions:
-        return
+    if bot.user in message.mentions:
 
-    user_message = message.content.replace(f"<@{client.user.id}>", "").strip()
+        question = message.content.replace(f"<@{bot.user.id}>", "").strip()
 
-    if not user_message:
-        await message.reply("👋 Xin chào! Hãy hỏi mình bất cứ điều gì nhé.")
-        return
+        if question == "":
+            await message.reply("👋 Xin chào! Hãy hỏi mình điều gì đó nhé.")
+            return
 
-    try:
-        response = client_ai.models.generate_content(
-            model="gemini-flash-latest",
-            contents=SYSTEM_PROMPT + "\n\nNgười dùng: " + user_message,
-        )
+        async with message.channel.typing():
+            answer = await ask_ai(question)
 
-        text = getattr(response, "text", None)
+        await message.reply(answer)
 
-        if not text:
-            text = "Xin lỗi, mình chưa tạo được câu trả lời."
+    await bot.process_commands(message)
 
-        await message.reply(text)
 
-    except Exception as e:
-        await message.reply(f"❌ Lỗi: {e}")
-
-client.run(TOKEN)
+bot.run(DISCORD_TOKEN)
