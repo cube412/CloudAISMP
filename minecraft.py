@@ -1,6 +1,13 @@
 import discord
 from ai import analyze_log
 
+SUPPORTED_FILES = (
+    ".log",
+    ".yml",
+    ".yaml",
+    ".properties",
+)
+
 async def handle_log(message):
 
     if len(message.attachments) == 0:
@@ -8,7 +15,7 @@ async def handle_log(message):
 
     file = message.attachments[0]
 
-    if not file.filename.endswith(".log"):
+    if not file.filename.endswith(SUPPORTED_FILES):
         return False
 
     data = await file.read()
@@ -18,11 +25,13 @@ async def handle_log(message):
     if len(text) > 30000:
         text = text[-30000:]
 
-    await message.reply("🔍 Đang phân tích latest.log...")
+    await message.reply(
+        f"📄 Đang phân tích **{file.filename}**..."
+    )
 
     result = await analyze_log(text)
 
-    if len(result) > 2000:
+    if len(result) > 1990:
         result = result[:1990]
 
     await message.reply(result)
