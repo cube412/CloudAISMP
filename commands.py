@@ -48,7 +48,7 @@ class CloudCommands(app_commands.Group):
 
         await interaction.response.defer()
 
-        answer = await ask_ai(question)
+        answer = await ask_ai(str(interaction.user.id), question)
 
         if len(answer) > 2000:
             answer = answer[:1990] + "..."
