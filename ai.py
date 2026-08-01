@@ -27,3 +27,32 @@ async def ask_ai(question):
 
     except Exception as e:
         return f"❌ Lỗi AI: {e}"
+async def analyze_log(log_text):
+
+    prompt = f"""
+Bạn là chuyên gia Minecraft.
+
+Đây là latest.log của server.
+
+Hãy:
+1. Tìm lỗi.
+2. Giải thích bằng tiếng Việt.
+3. Đưa cách sửa.
+4. Nếu có plugin lỗi hãy ghi tên plugin.
+
+Log:
+
+{log_text}
+"""
+
+    try:
+
+        response = client.models.generate_content(
+            model=AI_MODEL,
+            contents=prompt
+        )
+
+        return response.text
+
+    except Exception as e:
+        return str(e)
