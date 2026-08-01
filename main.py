@@ -80,17 +80,16 @@ async def on_message(message):
 
         await bot.process_commands(message)
 
+PORT = int(os.environ.get("PORT", 8080))
 
-# Khởi động Dashboard
 threading.Thread(
     target=lambda: app.run(
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", 8080))
+        port=PORT,
         debug=False,
         use_reloader=False
     ),
     daemon=True
 ).start()
 
-# Khởi động Discord Bot
 bot.run(DISCORD_TOKEN)
