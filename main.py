@@ -78,6 +78,12 @@ async def on_message(message):
         await message.reply(answer)
 
     await bot.process_commands(message)
-
+   threading.Thread(
+    target=lambda: app.run(
+        host="0.0.0.0",
+        port=26029
+    ),
+    daemon=True
+).start()
 
 bot.run(DISCORD_TOKEN)
