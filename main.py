@@ -77,13 +77,19 @@ async def on_message(message):
 
         await message.reply(answer)
 
-    await bot.process_commands(message)
-   threading.Thread(
+        await bot.process_commands(message)
+
+
+# Khởi động Dashboard
+threading.Thread(
     target=lambda: app.run(
         host="0.0.0.0",
-        port=8080
+        port=8080,
+        debug=False,
+        use_reloader=False
     ),
     daemon=True
 ).start()
 
+# Khởi động Discord Bot
 bot.run(DISCORD_TOKEN)
