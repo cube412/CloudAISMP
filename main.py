@@ -1,16 +1,14 @@
 import os
-import discord
 from google import genai
-from dotenv import load_dotenv
 
-load_dotenv()
-
-TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-client_ai = genai.Client(api_key=GEMINI_API_KEY)for m in client_ai.models.list():
+client_ai = genai.Client(api_key=GEMINI_API_KEY)
+
+for m in client_ai.models.list():
     print(m.name)
 
+exit()
 intents = discord.Intents.default()
 intents.message_content = True
 
