@@ -5,6 +5,8 @@ from config import DISCORD_TOKEN
 from ai import ask_ai
 from minecraft import handle_log
 from commands import CloudCommands
+from dashboard import app
+import threading
 
 intents = discord.Intents.default()
 intents.message_content = True
