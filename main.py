@@ -1,179 +1,111 @@
-import time
+import os
+import threading
+
 import discord
-from discord import app_commands
+from discord.ext import commands
 
-from config import ADMIN_ID, VERSION
-from memory import get_all_memory, clear_history
+from config import DISCORD_TOKEN
+from ai import ask_ai
+from minecraft import handle_log
+from commands import CloudCommands
+from admin import AdminCommands
+from dashboard import app
 
-BOT_START = time.time()
+intents = discord.Intents.default()
+intents.message_content = True
+
+bot = commands.Bot(
+    command_prefix="!",
+    intents=intents,
+    help_command=None
+)
+
+cloud_commands = CloudCommands()
+admin_commands = AdminCommands()
 
 
-class AdminCommands(app_commands.Group):
+@bot.event
+async def on_ready():
+    print("=" * 40)
+    print(f"🤖 Đăng nhập thành công: {bot.user}")
+    print("=" * 40)
 
-    def __init__(self):
-        super().__init__(
-            name="admin",
-            description="CloudAI Admin Panel"
+    await bot.change_presence(
+        activity=discord.Activity(
+            type=discord.ActivityType.watching,
+            name="CloudAI V6.3"
+        )
+    )
+
+    try:
+        bot.tree.add_command(cloud_commands)
+    except Exception:
+        pass
+
+    try:
+        bot.tree.add_command(admin_commands)
+    except Exception:
+        pass
+
+    try:
+        synced = await bot.tree.sync()
+        print(f"✅ Đồng bộ {len(synced)} Slash Commands")
+    except Exception as e:
+        print("Lỗi Slash Commands:", e)
+
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    # Phân tích file .log
+    handled = await handle_log(message)
+    if handled:
+        return
+
+    # Chỉ trả lời khi được mention
+    if bot.user in message.mentions:
+
+        question = (
+            message.content
+            .replace(f"<@{bot.user.id}>", "")
+            .replace(f"<@!{bot.user.id}>", "")
+            .strip()
         )
 
-    def check_owner(self, interaction: discord.Interaction):
-        return interaction.user.id == ADMIN_ID
-
-    @app_commands.command(
-        name="status",
-        description="Xem trạng thái CloudAI"
-    )
-    async def status(self, interaction: discord.Interaction):
-
-        if not self.check_owner(interaction):
-            await interaction.response.send_message(
-                "❌ Bạn không có quyền!",
-                ephemeral=True
+        if not question:
+            await message.reply(
+                "👋 Xin chào! Hãy hỏi mình điều gì đó nhé."
             )
             return
 
-        embed = discord.Embed(
-            title="☁️ CloudAI Status",
-            color=0x00BFFF
-        )
-
-        embed.add_field(
-            name="🤖 AI",
-            value="🟢 Online",
-            inline=True
-        )
-
-        embed.add_field(
-            name="👥 Memory",
-            value=f"{len(get_all_memory())} người dùng",
-            inline=True
-        )
-
-        embed.add_field(
-            name="📦 Version",
-            value=VERSION,
-            inline=True
-        )
-
-        await interaction.response.send_message(embed=embed)
-
-    @app_commands.command(
-        name="info",
-        description="Thông tin CloudAI"
-    )
-    async def info(self, interaction: discord.Interaction):
-
-        if not self.check_owner(interaction):
-            await interaction.response.send_message(
-                "❌ Bạn không có quyền!",
-                ephemeral=True
+        async with message.channel.typing():
+            answer = await ask_ai(
+                str(message.author.id),
+                question
             )
-            return
 
-        embed = discord.Embed(
-            title="🤖 CloudAI",
-            color=0x00BFFF
-        )
+        if len(answer) > 2000:
+            answer = answer[:1990] + "..."
 
-        embed.add_field(
-            name="Tên Bot",
-            value="CloudAI",
-            inline=False
-        )
+        await message.reply(answer)
 
-        embed.add_field(
-            name="AI",
-            value="Gemini",
-            inline=True
-        )
+    await bot.process_commands(message)
 
-        embed.add_field(
-            name="Ngôn ngữ",
-            value="Python",
-            inline=True
-        )
 
-        await interaction.response.send_message(embed=embed)
+def run_dashboard():
+    port = int(os.environ.get("PORT", 8080))
 
-    @app_commands.command(
-        name="version",
-        description="Xem phiên bản"
+    app.run(
+        host="0.0.0.0",
+        port=port
     )
-    async def version(self, interaction: discord.Interaction):
 
-        if not self.check_owner(interaction):
-            await interaction.response.send_message(
-                "❌ Bạn không có quyền!",
-                ephemeral=True
-            )
-            return
 
-        await interaction.response.send_message(
-            f"📦 CloudAI Version: **{VERSION}**"
-        )
+threading.Thread(
+    target=run_dashboard,
+    daemon=True
+).start()
 
-    @app_commands.command(
-        name="uptime",
-        description="Thời gian hoạt động"
-    )
-    async def uptime(self, interaction: discord.Interaction):
-
-        if not self.check_owner(interaction):
-            await interaction.response.send_message(
-                "❌ Bạn không có quyền!",
-                ephemeral=True
-            )
-            return
-
-        seconds = int(time.time() - BOT_START)
-
-        hours = seconds // 3600
-        minutes = (seconds % 3600) // 60
-        secs = seconds % 60
-
-        await interaction.response.send_message(
-            f"⏱️ Uptime: {hours}h {minutes}m {secs}s"
-        )
-
-    @app_commands.command(
-        name="clearmemory",
-        description="Xóa Memory của bạn"
-    )
-    async def clearmemory(self, interaction: discord.Interaction):
-
-        if not self.check_owner(interaction):
-            await interaction.response.send_message(
-                "❌ Bạn không có quyền!",
-                ephemeral=True
-            )
-            return
-
-        clear_history(str(interaction.user.id))
-
-        await interaction.response.send_message(
-            "✅ Đã xóa Memory!"
-        )
-
-    @app_commands.command(
-        name="say",
-        description="Bot nói thay bạn"
-    )
-    async def say(
-        self,
-        interaction: discord.Interaction,
-        message: str
-    ):
-
-        if not self.check_owner(interaction):
-            await interaction.response.send_message(
-                "❌ Bạn không có quyền!",
-                ephemeral=True
-            )
-            return
-
-        await interaction.response.send_message(
-            "✅ Đã gửi!",
-            ephemeral=True
-        )
-
-        await interaction.channel.send(message)
+bot.run(DISCORD_TOKEN)
