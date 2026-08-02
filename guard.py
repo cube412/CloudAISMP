@@ -15,20 +15,51 @@ def scan_log(log: str):
 
     report["plugins"] = []
 
-    plugins = [
-        "LuckPerms",
-        "Vault",
-        "DiscordSRV",
-        "BeautyQuests",
-        "Geyser",
-        "ViaVersion",
-        "ViaBackwards",
-        "ViaRewind",
-        "GrimAC",
-        "PlaceholderAPI",
-        "Essentials",
-        "Citizens"
-    ]
+ plugins = [
+
+    "LuckPerms",
+    "Vault",
+    "DiscordSRV",
+    "BeautyQuests",
+    "PlaceholderAPI",
+    "Essentials",
+    "EssentialsX",
+    "Citizens",
+    "DecentHolograms",
+    "ProtocolLib",
+    "WorldEdit",
+    "WorldGuard",
+    "CoreProtect",
+    "CMI",
+    "Multiverse-Core",
+    "Geyser",
+    "Floodgate",
+    "ViaVersion",
+    "ViaBackwards",
+    "ViaRewind",
+    "GrimAC",
+    "SkinsRestorer",
+    "EconomyShopGUI",
+    "XConomy",
+    "DeluxeMenus",
+    "TAB",
+    "ItemsAdder",
+    "MythicMobs",
+    "ExecutableItems",
+    "ExcellentCrates",
+    "CrazyCrates",
+    "Quests",
+    "MMOCore",
+    "MMOItems",
+    "ModelEngine",
+    "Shopkeepers",
+    "BlueMap",
+    "Spark",
+    "Chunky",
+    "GSit",
+    "LiteBans",
+    "FastAsyncWorldEdit"
+]
 
     for plugin in plugins:
 
