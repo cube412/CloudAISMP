@@ -33,3 +33,6 @@ MAX_HISTORY = 10
 VERSION = "5.0"
 
 EMBED_COLOR = 0x00BFFF
+import time
+
+START_TIME = time.time()
