@@ -1,7 +1,11 @@
+import time
 import discord
 from discord import app_commands
-from config import ADMIN_ID
+
+from config import ADMIN_ID, VERSION
 from memory import get_all_memory, clear_history
+
+BOT_START = time.time()
 
 
 class AdminCommands(app_commands.Group):
@@ -29,33 +33,111 @@ class AdminCommands(app_commands.Group):
             return
 
         embed = discord.Embed(
-            title="☁️ CloudAI V6",
+            title="☁️ CloudAI Status",
             color=0x00BFFF
         )
 
         embed.add_field(
             name="🤖 AI",
-            value="Online",
+            value="🟢 Online",
             inline=True
         )
 
         embed.add_field(
-            name="👑 Owner",
-            value=str(interaction.user),
-            inline=True
-        )
-
-        embed.add_field(
-            name="📦 Memory",
+            name="👥 Memory",
             value=f"{len(get_all_memory())} người dùng",
-            inline=False
+            inline=True
+        )
+
+        embed.add_field(
+            name="📦 Version",
+            value=VERSION,
+            inline=True
         )
 
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(
+        name="info",
+        description="Thông tin CloudAI"
+    )
+    async def info(self, interaction: discord.Interaction):
+
+        if not self.check_owner(interaction):
+            await interaction.response.send_message(
+                "❌ Bạn không có quyền!",
+                ephemeral=True
+            )
+            return
+
+        embed = discord.Embed(
+            title="🤖 CloudAI",
+            color=0x00BFFF
+        )
+
+        embed.add_field(
+            name="Tên Bot",
+            value="CloudAI",
+            inline=False
+        )
+
+        embed.add_field(
+            name="AI",
+            value="Gemini",
+            inline=True
+        )
+
+        embed.add_field(
+            name="Ngôn ngữ",
+            value="Python",
+            inline=True
+        )
+
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(
+        name="version",
+        description="Xem phiên bản"
+    )
+    async def version(self, interaction: discord.Interaction):
+
+        if not self.check_owner(interaction):
+            await interaction.response.send_message(
+                "❌ Bạn không có quyền!",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.send_message(
+            f"📦 CloudAI Version: **{VERSION}**"
+        )
+
+    @app_commands.command(
+        name="uptime",
+        description="Thời gian hoạt động"
+    )
+    async def uptime(self, interaction: discord.Interaction):
+
+        if not self.check_owner(interaction):
+            await interaction.response.send_message(
+                "❌ Bạn không có quyền!",
+                ephemeral=True
+            )
+            return
+
+        seconds = int(time.time() - BOT_START)
+
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        secs = seconds % 60
+
+        await interaction.response.send_message(
+            f"⏱️ Uptime: {hours}h {minutes}m {secs}s"
+        )
+
+    @app_commands.command(
         name="clearmemory",
-        description="Xóa memory của bạn"
+        description="Xóa Memory của bạn"
     )
     async def clearmemory(self, interaction: discord.Interaction):
 
@@ -89,6 +171,9 @@ class AdminCommands(app_commands.Group):
             )
             return
 
-        await interaction.response.send_message("✅ Đã gửi!")
+        await interaction.response.send_message(
+            "✅ Đã gửi!",
+            ephemeral=True
+        )
 
         await interaction.channel.send(message)
