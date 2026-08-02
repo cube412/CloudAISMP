@@ -2,6 +2,7 @@ import discord
 
 from ai import analyze_log
 from guard import scan_log
+from plugin_database import PLUGIN_FIXES
 
 
 async def handle_log(message):
@@ -23,29 +24,54 @@ async def handle_log(message):
 
     report = scan_log(text)
 
+    tips = []
+
+    for plugin in report["plugins"]:
+        if plugin in PLUGIN_FIXES:
+            tips.append(
+                f"• **{plugin}**: {PLUGIN_FIXES[plugin]}"
+            )
+
+    plugins = (
+        "\n".join(f"• {p}" for p in report["plugins"])
+        if report["plugins"]
+        else "Không phát hiện"
+    )
+
+    suggestions = (
+        "\n".join(tips)
+        if tips
+        else "Không có khuyến nghị."
+    )
+
     await message.reply(
         f"""
-🛡 **CloudAI Guard**
+# 🛡 CloudAI Guard
 
-❤️ Health: **{report['health']}%**
+❤️ **Health:** {report['health']}%
 
-❌ Error: **{report['errors']}**
+❌ **Errors:** {report['errors']}
 
-⚠ Warning: **{report['warnings']}**
+⚠ **Warnings:** {report['warnings']}
 
-💥 Exception: **{report['exceptions']}**
+💥 **Exceptions:** {report['exceptions']}
 
-📦 Plugins:
-{', '.join(report['plugins']) if report['plugins'] else 'Không phát hiện'}
+📦 **Plugins phát hiện:**
 
-🤖 AI đang phân tích sâu...
+{plugins}
+
+💡 **Khuyến nghị:**
+
+{suggestions}
+
+🤖 Đang phân tích AI...
 """
     )
 
     result = await analyze_log(text)
 
     if len(result) > 2000:
-        result = result[:1990]
+        result = result[:1990] + "..."
 
     await message.reply(result)
 
