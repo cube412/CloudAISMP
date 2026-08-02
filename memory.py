@@ -15,3 +15,6 @@ def add_message(user_id, role, content):
 
 def get_history(user_id):
     return memory.get(user_id, [])
+def clear_history(user_id):
+    if user_id in memory:
+        memory[user_id] = []
