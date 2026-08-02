@@ -1,20 +1,28 @@
 memory = {}
 
-def add_message(user_id, role, content):
+
+def get_history(user_id):
     if user_id not in memory:
         memory[user_id] = []
+    return memory[user_id]
 
-    memory[user_id].append({
+
+def add_message(user_id, role, content):
+    history = get_history(user_id)
+
+    history.append({
         "role": role,
         "content": content
     })
 
-    if len(memory[user_id]) > 10:
-        memory[user_id] = memory[user_id][-10:]
+    if len(history) > 10:
+        memory[user_id] = history[-10:]
 
 
-def get_history(user_id):
-    return memory.get(user_id, [])
 def clear_history(user_id):
     if user_id in memory:
         memory[user_id] = []
+
+
+def get_all_memory():
+    return memory
