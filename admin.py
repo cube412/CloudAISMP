@@ -23,7 +23,7 @@ class AdminCommands(app_commands.Group):
 
     @app_commands.command(
         name="status",
-        description="Xem trạng thái bot"
+        description="Xem trạng thái CloudAI"
     )
     async def status(self, interaction: discord.Interaction):
 
@@ -60,10 +60,10 @@ class AdminCommands(app_commands.Group):
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(
-        name="info",
-        description="Thông tin bot"
+        name="tps",
+        description="Xem TPS Server"
     )
-    async def info(self, interaction: discord.Interaction):
+    async def tps(self, interaction: discord.Interaction):
 
         if not self.check_owner(interaction):
             await interaction.response.send_message(
@@ -72,29 +72,76 @@ class AdminCommands(app_commands.Group):
             )
             return
 
+        result = run("tps")
+
         embed = discord.Embed(
-            title="🤖 CloudAI",
+            title="📊 TPS Server",
+            description=f"```{result}```",
             color=0x00BFFF
         )
 
-        embed.add_field(
-            name="Tên",
-            value="CloudAI",
-            inline=False
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(
+        name="online",
+        description="Xem người chơi online"
+    )
+    async def online(self, interaction: discord.Interaction):
+
+        if not self.check_owner(interaction):
+            await interaction.response.send_message(
+                "❌ Bạn không có quyền!",
+                ephemeral=True
+            )
+            return
+
+        result = run("list")
+
+        await interaction.response.send_message(
+            f"```{result}```"
         )
 
-        embed.add_field(
-            name="AI",
-            value="Gemini",
-            inline=True
+    @app_commands.command(
+        name="say",
+        description="Bot nói thay bạn"
+    )
+    async def say(
+        self,
+        interaction: discord.Interaction,
+        message: str
+    ):
+
+        if not self.check_owner(interaction):
+            await interaction.response.send_message(
+                "❌ Bạn không có quyền!",
+                ephemeral=True
+            )
+            return
+
+        run(f"say {message}")
+
+        await interaction.response.send_message(
+            "✅ Đã gửi!"
         )
 
-        embed.add_field(
-            name="Version",
-            value=VERSION,
-            inline=True
-        )
+    @app_commands.command(
+        name="clearmemory",
+        description="Xóa Memory"
+    )
+    async def clearmemory(self, interaction: discord.Interaction):
 
+        if not self.check_owner(interaction):
+            await interaction.response.send_message(
+                "❌ Bạn không có quyền!",
+                ephemeral=True
+            )
+            return
+
+        clear_history(str(interaction.user.id))
+
+        await interaction.response.send_message(
+            "✅ Đã xóa Memory!"
+        )
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(
