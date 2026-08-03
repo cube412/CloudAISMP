@@ -4,6 +4,7 @@ from discord import app_commands
 
 from config import ADMIN_ID, VERSION
 from memory import get_all_memory, clear_history
+from rcon import run
 
 
 BOT_START = time.time()
