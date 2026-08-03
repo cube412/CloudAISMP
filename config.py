@@ -36,3 +36,6 @@ EMBED_COLOR = 0x00BFFF
 import time
 
 START_TIME = time.time()
+RCON_HOST = "127.0.0.1"
+RCON_PORT = 25575
+RCON_PASSWORD = os.getenv("RCON_PASSWORD")
