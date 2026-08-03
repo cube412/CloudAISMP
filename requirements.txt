@@ -5,3 +5,4 @@ aiohttp
 PyYAML
 flask==3.1.1
 psutil==7.0.0
+mcrcon==0.7.0
