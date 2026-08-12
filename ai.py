@@ -1,27 +1,35 @@
 from google import genai
 
-from config import GEMINI_API_KEY, AI_MODEL, BOT_NAME
+from config import (
+    GEMINI_API_KEY,
+    AI_MODEL,
+    BOT_NAME,
+    BOT_TOPIC
+)
+
 from memory import add_message, get_history
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+
+client = genai.Client(
+    api_key=GEMINI_API_KEY
+)
+
 
 SYSTEM_PROMPT = f"""
 Bạn là {BOT_NAME}, một trợ lý AI Discord.
 
+Chủ đề chính của bạn là:
+{BOT_TOPIC}
+
 Luôn trả lời bằng tiếng Việt.
 
-Bạn có kiến thức về:
-- Discord
-- Python
-- Minecraft
-- Paper
-- Spigot
-- Plugin
-- Server
-- Công nghệ
-
-Hãy trả lời dễ hiểu, thân thiện và ngắn gọn.
-Nếu người dùng hỏi về chủ đề khác, vẫn cố gắng hỗ trợ trong khả năng của bạn.
+Hãy:
+- Trả lời dễ hiểu.
+- Thân thiện.
+- Không bịa thông tin.
+- Nếu không biết, hãy nói rõ.
+- Nếu người dùng hỏi ngoài chủ đề,
+  vẫn cố gắng hỗ trợ nếu có thể.
 """
 
 
@@ -32,11 +40,15 @@ async def ask_ai(user_id, question):
     prompt = SYSTEM_PROMPT + "\n\n"
 
     for msg in history:
-        prompt += f"{msg['role']}: {msg['content']}\n"
+        prompt += (
+            f"{msg['role']}: "
+            f"{msg['content']}\n"
+        )
 
     prompt += f"Người dùng: {question}"
 
     try:
+
         response = client.models.generate_content(
             model=AI_MODEL,
             contents=prompt
@@ -59,6 +71,7 @@ async def ask_ai(user_id, question):
         return answer
 
     except Exception as e:
+
         return f"❌ Lỗi AI: {e}"
 
 
@@ -67,23 +80,26 @@ async def analyze_log(log_text):
     prompt = f"""
 Bạn là chuyên gia Minecraft server.
 
-Hãy phân tích nội dung log bên dưới.
+Hãy phân tích log dưới đây.
 
-Hãy:
-- Tìm ERROR
-- Tìm WARNING
-- Tìm plugin gây lỗi
-- Tìm nguyên nhân
-- Giải thích lỗi bằng tiếng Việt
-- Đưa cách sửa
-- Nếu không có lỗi nghiêm trọng, nói rõ điều đó
+Hãy tìm:
 
-Nội dung log:
+- ERROR
+- WARNING
+- Plugin lỗi
+- Nguyên nhân
+- Cách sửa
+
+Hãy giải thích bằng tiếng Việt
+và dễ hiểu.
+
+LOG:
 
 {log_text}
 """
 
     try:
+
         response = client.models.generate_content(
             model=AI_MODEL,
             contents=prompt
@@ -92,4 +108,5 @@ Nội dung log:
         return response.text
 
     except Exception as e:
+
         return f"❌ Lỗi phân tích: {e}"
