@@ -7,8 +7,7 @@ import discord
 
 OWNER_ID = 1514447473748475975
 
-# Để None trước.
-# Sau này có thể đặt ID Category chứa ticket.
+# Nếu chưa có Category riêng thì để None
 TICKET_CATEGORY_ID = None
 
 
@@ -68,28 +67,35 @@ class OrderView(discord.ui.View):
         button: discord.ui.Button
     ):
 
+        # Báo Discord rằng bot đang xử lý
+        await interaction.response.defer(
+            ephemeral=True
+        )
+
         guild = interaction.guild
 
         if guild is None:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "❌ Chỉ có thể đặt bot trong server Discord.",
                 ephemeral=True
             )
             return
 
-        # Kiểm tra ticket cũ
+        # Tên ticket
         ticket_name = f"ticket-{interaction.user.id}"
 
+        # Kiểm tra ticket cũ
         for channel in guild.text_channels:
             if channel.name == ticket_name:
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     f"❌ Bạn đã có ticket: {channel.mention}",
                     ephemeral=True
                 )
                 return
 
-        # Quyền xem ticket
+        # Quyền của ticket
         overwrites = {
+
             guild.default_role: discord.PermissionOverwrite(
                 view_channel=False
             ),
@@ -111,21 +117,47 @@ class OrderView(discord.ui.View):
                 read_message_history=True
             )
 
-        # Category ticket
+        # Category
         category = None
 
         if TICKET_CATEGORY_ID is not None:
-            category = guild.get_channel(TICKET_CATEGORY_ID)
+            category = guild.get_channel(
+                TICKET_CATEGORY_ID
+            )
 
         # Tạo ticket
-        channel = await guild.create_text_channel(
-            ticket_name,
-            category=category,
-            overwrites=overwrites,
-            reason="CloudAI Order"
-        )
+        try:
 
-        # Nội dung ticket
+            channel = await guild.create_text_channel(
+                ticket_name,
+                category=category,
+                overwrites=overwrites,
+                reason="CloudAI Order"
+            )
+
+        except discord.Forbidden:
+
+            await interaction.followup.send(
+                "❌ CloudAI không có quyền tạo kênh!\n"
+                "Hãy cấp quyền **Manage Channels** cho bot.",
+                ephemeral=True
+            )
+            return
+
+        except Exception as e:
+
+            print(
+                f"[CloudAI] Lỗi tạo ticket: {e}"
+            )
+
+            await interaction.followup.send(
+                "❌ Không thể tạo ticket.\n"
+                "Hãy xem log Railway.",
+                ephemeral=True
+            )
+            return
+
+        # Embed ticket
         embed = discord.Embed(
             title="🎫 CloudAI Order",
             description=(
@@ -149,7 +181,8 @@ class OrderView(discord.ui.View):
             view=TicketView()
         )
 
-        await interaction.response.send_message(
+        # Thông báo cho người đặt
+        await interaction.followup.send(
             f"✅ Đã tạo ticket: {channel.mention}",
             ephemeral=True
         )
