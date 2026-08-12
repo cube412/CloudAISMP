@@ -214,22 +214,43 @@ class CloudCommands(app_commands.Group):
             value="/cloud plugin LuckPerms là gì?",
             inline=False
         )
+import discord
+from discord import app_commands
 
-        embed.add_field(
-            name="🤖 AI",
-            value="/cloud ai Paper khác Spigot như thế nào?",
-            inline=False
+from ai import ask_ai
+from plans import get_all_plans
+from orders import OrderView, create_order_embed
+
+
+class CloudCommands(app_commands.Group):
+
+    def __init__(self):
+        super().__init__(
+            name="cloud",
+            description="CloudAI Commands"
         )
 
-        embed.add_field(
-            name="⚡ TPS",
-            value="/cloud tps",
-            inline=False
-        )
+    @app_commands.command(
+        name="ping",
+        description="Kiểm tra bot"
+    )
+    async def ping(self, interaction: discord.Interaction):
 
         await interaction.response.send_message(
-            embed=embed
+            f"🏓 Pong!\nLatency: {round(interaction.client.latency * 1000)} ms"
         )
+
+    @app_commands.command(
+        name="help",
+        description="Hiện hướng dẫn"
+    )
+    async def help(self, interaction: discord.Interaction):
+
+        embed = discord.Embed(
+            title="🤖 CloudAI",
+            color=0x00BFFF
+        )
+
         embed.add_field(
             name="/cloud ai",
             value="Hỏi AI",
@@ -376,15 +397,12 @@ class CloudCommands(app_commands.Group):
 
         embed = discord.Embed(
             title="⚡ TPS Minecraft",
-            description="""
-🟢 20 TPS = Server rất mượt
-
-🟡 18-19 TPS = Bình thường
-
-🟠 15-17 TPS = Có dấu hiệu lag
-
-🔴 Dưới 15 TPS = Server đang lag nặng
-""",
+            description=(
+                "🟢 20 TPS = Server rất mượt\n\n"
+                "🟡 18-19 TPS = Bình thường\n\n"
+                "🟠 15-17 TPS = Có dấu hiệu lag\n\n"
+                "🔴 Dưới 15 TPS = Server đang lag nặng"
+            ),
             color=0x00BFFF
         )
 
@@ -392,6 +410,39 @@ class CloudCommands(app_commands.Group):
             embed=embed
         )
 
+    @app_commands.command(
+        name="helpmc",
+        description="Hướng dẫn Minecraft"
+    )
+    async def helpmc(self, interaction: discord.Interaction):
+
+        embed = discord.Embed(
+            title="🎮 Minecraft Assistant",
+            description="CloudAI hỗ trợ Minecraft",
+            color=0x00BFFF
+        )
+
+        embed.add_field(
+            name="📄 Plugin",
+            value="/cloud plugin LuckPerms là gì?",
+            inline=False
+        )
+
+        embed.add_field(
+            name="🤖 AI",
+            value="/cloud ai Paper khác Spigot như thế nào?",
+            inline=False
+        )
+
+        embed.add_field(
+            name="⚡ TPS",
+            value="/cloud tps",
+            inline=False
+        )
+
+        await interaction.response.send_message(
+            embed=embed
+        )
     @app_commands.command(
         name="helpmc",
         description="Hướng dẫn Minecraft"
