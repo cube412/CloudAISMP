@@ -1,34 +1,33 @@
 from google import genai
-from config import GEMINI_API_KEY, AI_MODEL
+
+from config import GEMINI_API_KEY, AI_MODEL, BOT_NAME
+from memory import add_message, get_history
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-memory = {}
-
-SYSTEM_PROMPT = """
-Bạn là CloudAI.
+SYSTEM_PROMPT = f"""
+Bạn là {BOT_NAME}, một trợ lý AI Discord.
 
 Luôn trả lời bằng tiếng Việt.
 
-Bạn là chuyên gia:
-
+Bạn có kiến thức về:
+- Discord
+- Python
 - Minecraft
 - Paper
 - Spigot
 - Plugin
-- Discord
-- Python
+- Server
+- Công nghệ
 
-Trả lời ngắn gọn và dễ hiểu.
+Hãy trả lời dễ hiểu, thân thiện và ngắn gọn.
+Nếu người dùng hỏi về chủ đề khác, vẫn cố gắng hỗ trợ trong khả năng của bạn.
 """
 
 
 async def ask_ai(user_id, question):
 
-    if user_id not in memory:
-        memory[user_id] = []
-
-    history = memory[user_id]
+    history = get_history(user_id)
 
     prompt = SYSTEM_PROMPT + "\n\n"
 
@@ -38,7 +37,6 @@ async def ask_ai(user_id, question):
     prompt += f"Người dùng: {question}"
 
     try:
-
         response = client.models.generate_content(
             model=AI_MODEL,
             contents=prompt
@@ -46,48 +44,46 @@ async def ask_ai(user_id, question):
 
         answer = response.text
 
-        history.append({
-            "role": "Người dùng",
-            "content": question
-        })
+        add_message(
+            user_id,
+            "Người dùng",
+            question
+        )
 
-        history.append({
-            "role": "CloudAI",
-            "content": answer
-        })
-
-        if len(history) > 20:
-            history[:] = history[-20:]
+        add_message(
+            user_id,
+            "CloudAI",
+            answer
+        )
 
         return answer
 
     except Exception as e:
-        return f"Lỗi AI: {e}"
+        return f"❌ Lỗi AI: {e}"
 
 
 async def analyze_log(log_text):
 
     prompt = f"""
-Bạn là chuyên gia Minecraft.
+Bạn là chuyên gia Minecraft server.
 
-Đây là file cấu hình hoặc file log.
+Hãy phân tích nội dung log bên dưới.
 
 Hãy:
-
-- Phân tích file
-- Tìm lỗi
+- Tìm ERROR
 - Tìm WARNING
-- Tìm plugin lỗi
-- Giải thích bằng tiếng Việt
+- Tìm plugin gây lỗi
+- Tìm nguyên nhân
+- Giải thích lỗi bằng tiếng Việt
 - Đưa cách sửa
+- Nếu không có lỗi nghiêm trọng, nói rõ điều đó
 
-Nội dung file:
+Nội dung log:
 
 {log_text}
 """
 
     try:
-
         response = client.models.generate_content(
             model=AI_MODEL,
             contents=prompt
@@ -96,15 +92,4 @@ Nội dung file:
         return response.text
 
     except Exception as e:
-        return str(e)
-    try:
-
-        response = client.models.generate_content(
-            model=AI_MODEL,
-            contents=prompt
-        )
-
-        return response.text
-
-    except Exception as e:
-        return str(e)
+        return f"❌ Lỗi phân tích: {e}"
