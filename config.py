@@ -1,4 +1,5 @@
 import os
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,6 +13,9 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 PREFIX = "!"
 
 BOT_NAME = "CloudAI"
+
+# Chủ đề của bot
+BOT_TOPIC = "Trợ lý AI đa chủ đề"
 
 # Discord User ID của Owner
 ADMIN_ID = 1514447473748475975
@@ -33,9 +37,15 @@ MAX_HISTORY = 10
 VERSION = "5.0"
 
 EMBED_COLOR = 0x00BFFF
-import time
 
 START_TIME = time.time()
+
+# =========================
+# RCON Minecraft
+# =========================
+
 RCON_HOST = "127.0.0.1"
+
 RCON_PORT = 25575
+
 RCON_PASSWORD = os.getenv("RCON_PASSWORD")
