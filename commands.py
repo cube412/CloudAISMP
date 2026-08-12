@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 
 from ai import ask_ai
+from plans import get_all_plans
 
 
 class CloudCommands(app_commands.Group):
@@ -29,7 +30,7 @@ class CloudCommands(app_commands.Group):
     async def help(self, interaction: discord.Interaction):
 
         embed = discord.Embed(
-            title="🤖 CloudAI V5.3",
+            title="🤖 CloudAI",
             color=0x00BFFF
         )
 
@@ -57,7 +58,48 @@ class CloudCommands(app_commands.Group):
             inline=False
         )
 
+        embed.add_field(
+            name="/cloud plans",
+            value="Xem các gói CloudAI",
+            inline=False
+        )
+
         await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(
+        name="plans",
+        description="Xem bảng giá CloudAI"
+    )
+    async def plans(self, interaction: discord.Interaction):
+
+        plans = get_all_plans()
+
+        embed = discord.Embed(
+            title="☁️ CloudAI — Bảng giá",
+            description="Nhận làm bot Discord AI theo yêu cầu",
+            color=0x00BFFF
+        )
+
+        for plan_id, plan in plans.items():
+
+            features = "\n".join(
+                f"• {feature}"
+                for feature in plan["features"]
+            )
+
+            embed.add_field(
+                name=f"{plan['name']} — {plan['price']:,}đ",
+                value=features,
+                inline=False
+            )
+
+        embed.set_footer(
+            text="📩 Liên hệ để đặt bot"
+        )
+
+        await interaction.response.send_message(
+            embed=embed
+        )
 
     @app_commands.command(
         name="ai",
@@ -129,7 +171,9 @@ class CloudCommands(app_commands.Group):
             color=0x00BFFF
         )
 
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(
+            embed=embed
+        )
 
     @app_commands.command(
         name="helpmc",
@@ -161,4 +205,6 @@ class CloudCommands(app_commands.Group):
             inline=False
         )
 
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(
+            embed=embed
+        )
