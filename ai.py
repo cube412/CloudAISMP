@@ -1,12 +1,12 @@
 from google import genai
 
-from config import (
-    GEMINI_API_KEY,
-    AI_MODEL,
+from config import GEMINI_API_KEY, AI_MODEL
+from bot_settings import (
     BOT_NAME,
-    BOT_TOPIC
+    BOT_TOPIC,
+    BOT_PERSONALITY,
+    BOT_LANGUAGE
 )
-
 from memory import add_message, get_history
 
 
@@ -18,18 +18,21 @@ client = genai.Client(
 SYSTEM_PROMPT = f"""
 Bạn là {BOT_NAME}, một trợ lý AI Discord.
 
-Chủ đề chính của bạn là:
+Chủ đề chính:
 {BOT_TOPIC}
 
-Luôn trả lời bằng tiếng Việt.
+Tính cách:
+{BOT_PERSONALITY}
 
-Hãy:
+Ngôn ngữ:
+{BOT_LANGUAGE}
+
+Quy tắc:
 - Trả lời dễ hiểu.
 - Thân thiện.
 - Không bịa thông tin.
 - Nếu không biết, hãy nói rõ.
-- Nếu người dùng hỏi ngoài chủ đề,
-  vẫn cố gắng hỗ trợ nếu có thể.
+- Có thể hỗ trợ các câu hỏi ngoài chủ đề nếu phù hợp.
 """
 
 
@@ -64,7 +67,7 @@ async def ask_ai(user_id, question):
 
         add_message(
             user_id,
-            "CloudAI",
+            BOT_NAME,
             answer
         )
 
