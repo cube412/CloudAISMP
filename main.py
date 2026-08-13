@@ -26,9 +26,9 @@ admin_commands = AdminCommands()
 
 @bot.event
 async def on_ready():
-print("=" * 40)
+print("========================================")
 print(f"🤖 Đăng nhập thành công: {bot.user}")
-print("=" * 40)
+print("========================================")
 
 ```
 await bot.change_presence(
@@ -40,13 +40,13 @@ await bot.change_presence(
 
 try:
     bot.tree.add_command(cloud_commands)
-    print("✅ Đã đăng ký CloudCommands")
+    print("✅ CloudCommands đã đăng ký")
 except Exception as e:
     print(f"⚠️ CloudCommands: {e}")
 
 try:
     bot.tree.add_command(admin_commands)
-    print("✅ Đã đăng ký AdminCommands")
+    print("✅ AdminCommands đã đăng ký")
 except Exception as e:
     print(f"⚠️ AdminCommands: {e}")
 
@@ -54,14 +54,14 @@ try:
     synced = await bot.tree.sync()
     print(f"✅ Đồng bộ {len(synced)} Slash Commands")
 except Exception as e:
-    print(f"❌ Lỗi Slash Commands: {e}")
+    print(f"❌ Lỗi đồng bộ Slash Commands: {e}")
 
 try:
     bot.add_view(OrderView())
     bot.add_view(TicketView())
-    print("✅ Đã đăng ký Order/Ticket Views")
+    print("✅ OrderView và TicketView đã đăng ký")
 except Exception as e:
-    print(f"⚠️ View Error: {e}")
+    print(f"⚠️ Lỗi đăng ký View: {e}")
 ```
 
 @bot.event
@@ -80,12 +80,19 @@ except Exception as e:
     print(f"[CloudAI] Log Handler Error: {e}")
 
 if bot.user and bot.user in message.mentions:
-    question = (
-        message.content
-        .replace(f"<@{bot.user.id}>", "")
-        .replace(f"<@!{bot.user.id}>", "")
-        .strip()
+    question = message.content
+
+    question = question.replace(
+        f"<@{bot.user.id}>",
+        ""
     )
+
+    question = question.replace(
+        f"<@!{bot.user.id}>",
+        ""
+    )
+
+    question = question.strip()
 
     if not question:
         await message.reply(
@@ -102,6 +109,7 @@ if bot.user and bot.user in message.mentions:
 
         except Exception as e:
             print(f"[CloudAI] AI Error: {e}")
+
             answer = (
                 "❌ AI đang gặp lỗi. "
                 "Vui lòng thử lại sau."
@@ -130,10 +138,12 @@ app.run(
 )
 ```
 
-threading.Thread(
+dashboard_thread = threading.Thread(
 target=run_dashboard,
 daemon=True
-).start()
+)
+
+dashboard_thread.start()
 
 print("🚀 Đang khởi động CloudAI...")
 
