@@ -1,55 +1,70 @@
-# =========================
-# CloudAI Plans
-# =========================
+import json
+import os
 
-PLANS = {
+PLANS_FILE = "plans.json"
 
-    "basic": {
-        "name": "Basic",
-        "price": 20000,
+DEFAULT_PLAN = "20K"
 
-        "features": [
-            "AI Chat",
-            "Discord Commands",
-            "Memory"
-        ]
-    },
 
-    "vip": {
-        "name": "VIP",
-        "price": 40000,
+def load_plans():
+    if not os.path.exists(PLANS_FILE):
+        return {}
 
-        "features": [
-            "AI Chat",
-            "Discord Commands",
-            "Memory",
-            "Welcome",
-            "Moderation",
-            "Custom Personality"
-        ]
-    },
+    try:
+        with open(PLANS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
 
-    "custom": {
-        "name": "Custom",
-        "price": 50000,
 
-        "features": [
-            "AI Chat",
-            "Memory",
-            "Custom Personality",
-            "Custom Commands",
-            "Custom Features"
-        ]
+def save_plans(plans):
+    with open(PLANS_FILE, "w", encoding="utf-8") as f:
+        json.dump(
+            plans,
+            f,
+            ensure_ascii=False,
+            indent=4
+        )
+
+
+def get_plan(guild_id):
+    plans = load_plans()
+
+    return plans.get(
+        str(guild_id),
+        DEFAULT_PLAN
+    )
+
+
+def set_plan(guild_id, plan):
+    plans = load_plans()
+
+    plans[str(guild_id)] = plan.upper()
+
+    save_plans(plans)
+
+
+def has_feature(guild_id, feature):
+    plan = get_plan(guild_id)
+
+    basic_features = {
+        "ai_chat",
+        "memory",
+        "minecraft"
     }
 
-}
+    vip_features = {
+        "welcome",
+        "moderation",
+        "custom_commands",
+        "ai_channel",
+        "advanced"
+    }
 
+    if feature in basic_features:
+        return True
 
-def get_plan(plan_id):
+    if feature in vip_features:
+        return plan == "40K"
 
-    return PLANS.get(plan_id)
-
-
-def get_all_plans():
-
-    return PLANS
+    return False
