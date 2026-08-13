@@ -11,113 +11,136 @@ from admin import AdminCommands
 from dashboard import app
 from orders import OrderView, TicketView
 
+
 intents = discord.Intents.default()
 intents.message_content = True
 
+
 bot = commands.Bot(
-command_prefix="!",
-intents=intents,
-help_command=None
+    command_prefix="!",
+    intents=intents,
+    help_command=None
 )
+
 
 cloud_commands = CloudCommands()
 admin_commands = AdminCommands()
 
+
 @bot.event
 async def on_ready():
-print("========================================")
-print(f"🤖 Đăng nhập thành công: {bot.user}")
-print("========================================")
+    print("========================================")
+    print(f"🤖 Đăng nhập thành công: {bot.user}")
+    print("========================================")
 
-```
-await bot.change_presence(
-    activity=discord.Activity(
-        type=discord.ActivityType.watching,
-        name="CloudAI V6.3"
+    await bot.change_presence(
+        activity=discord.Activity(
+            type=discord.ActivityType.watching,
+            name="CloudAI V6.3"
+        )
     )
-)
 
-try:
-    bot.tree.add_command(cloud_commands)
-    print("✅ CloudCommands đã đăng ký")
-except Exception as e:
-    print(f"⚠️ CloudCommands: {e}")
+    try:
+        bot.tree.add_command(cloud_commands)
+        print("✅ CloudCommands đã đăng ký")
+    except Exception as e:
+        print(f"⚠️ CloudCommands: {e}")
 
-try:
-    bot.tree.add_command(admin_commands)
-    print("✅ AdminCommands đã đăng ký")
-except Exception as e:
-    print(f"⚠️ AdminCommands: {e}")
+    try:
+        bot.tree.add_command(admin_commands)
+        print("✅ AdminCommands đã đăng ký")
+    except Exception as e:
+        print(f"⚠️ AdminCommands: {e}")
 
-try:
-    synced = await bot.tree.sync()
-    print(f"✅ Đồng bộ {len(synced)} Slash Commands")
-except Exception as e:
-    print(f"❌ Lỗi đồng bộ: {e}")
+    try:
+        synced = await bot.tree.sync()
+        print(f"✅ Đồng bộ {len(synced)} Slash Commands")
+    except Exception as e:
+        print(f"❌ Lỗi đồng bộ: {e}")
 
-try:
-    bot.add_view(OrderView())
-    bot.add_view(TicketView())
-    print("✅ Order/Ticket View đã đăng ký")
-except Exception as e:
-    print(f"⚠️ View Error: {e}")
-```
+    try:
+        bot.add_view(OrderView())
+        bot.add_view(TicketView())
+        print("✅ Order/Ticket View đã đăng ký")
+    except Exception as e:
+        print(f"⚠️ View Error: {e}")
+
 
 @bot.event
 async def on_message(message):
-if message.author.bot:
-return
-
-```
-try:
-    handled = await handle_log(message)
-    if handled:
+    if message.author.bot:
         return
-except Exception as e:
-    print(f"[CloudAI] Log Error: {e}")
 
-if bot.user and bot.user in message.mentions:
-    question = message.content
-    question = question.replace(f"<@{bot.user.id}>", "")
-    question = question.replace(f"<@!{bot.user.id}>", "")
-    question = question.strip()
+    try:
+        handled = await handle_log(message)
 
-    if not question:
-        await message.reply(
-            "👋 Xin chào! Hãy hỏi mình điều gì đó nhé."
+        if handled:
+            return
+
+    except Exception as e:
+        print(f"[CloudAI] Log Error: {e}")
+
+    if bot.user and bot.user in message.mentions:
+        question = message.content
+
+        question = question.replace(
+            f"<@{bot.user.id}>",
+            ""
         )
-        return
 
-    async with message.channel.typing():
-        try:
-            answer = await ask_ai(
-                str(message.author.id),
-                question
+        question = question.replace(
+            f"<@!{bot.user.id}>",
+            ""
+        )
+
+        question = question.strip()
+
+        if not question:
+            await message.reply(
+                "👋 Xin chào! Hãy hỏi mình điều gì đó nhé."
             )
-        except Exception as e:
-            print(f"[CloudAI] AI Error: {e}")
-            answer = "❌ AI đang gặp lỗi."
+            return
 
-    if len(answer) > 2000:
-        answer = answer[:1990] + "..."
+        async with message.channel.typing():
+            try:
+                answer = await ask_ai(
+                    str(message.author.id),
+                    question
+                )
 
-    await message.reply(answer)
+            except Exception as e:
+                print(f"[CloudAI] AI Error: {e}")
+                answer = "❌ AI đang gặp lỗi."
 
-await bot.process_commands(message)
-```
+        if len(answer) > 2000:
+            answer = answer[:1990] + "..."
+
+        await message.reply(answer)
+
+    await bot.process_commands(message)
+
 
 def run_dashboard():
-port = int(os.environ.get("PORT", 8080))
-app.run(
-host="0.0.0.0",
-port=port
-)
+    port = int(
+        os.environ.get(
+            "PORT",
+            8080
+        )
+    )
+
+    app.run(
+        host="0.0.0.0",
+        port=port
+    )
+
 
 threading.Thread(
-target=run_dashboard,
-daemon=True
+    target=run_dashboard,
+    daemon=True
 ).start()
 
+
 print("🚀 Đang khởi động CloudAI...")
+
 
 bot.run(DISCORD_TOKEN)
