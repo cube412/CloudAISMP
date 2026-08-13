@@ -26,12 +26,11 @@ admin_commands = AdminCommands()
 
 @bot.event
 async def on_ready():
-
-```
 print("=" * 40)
 print(f"🤖 Đăng nhập thành công: {bot.user}")
 print("=" * 40)
 
+```
 await bot.change_presence(
     activity=discord.Activity(
         type=discord.ActivityType.watching,
@@ -39,196 +38,92 @@ await bot.change_presence(
     )
 )
 
-# ==========================================
-# ĐĂNG KÝ SLASH COMMAND
-# ==========================================
-
 try:
-
-    bot.tree.add_command(
-        cloud_commands
-    )
-
-    print(
-        "✅ Đã đăng ký CloudCommands"
-    )
-
+    bot.tree.add_command(cloud_commands)
+    print("✅ Đã đăng ký CloudCommands")
 except Exception as e:
-
-    print(
-        f"⚠️ CloudCommands: {e}"
-    )
+    print(f"⚠️ CloudCommands: {e}")
 
 try:
-
-    bot.tree.add_command(
-        admin_commands
-    )
-
-    print(
-        "✅ Đã đăng ký AdminCommands"
-    )
-
+    bot.tree.add_command(admin_commands)
+    print("✅ Đã đăng ký AdminCommands")
 except Exception as e:
-
-    print(
-        f"⚠️ AdminCommands: {e}"
-    )
-
-# ==========================================
-# ĐỒNG BỘ SLASH COMMAND
-# ==========================================
+    print(f"⚠️ AdminCommands: {e}")
 
 try:
-
     synced = await bot.tree.sync()
-
-    print(
-        f"✅ Đồng bộ {len(synced)} Slash Commands"
-    )
-
+    print(f"✅ Đồng bộ {len(synced)} Slash Commands")
 except Exception as e:
-
-    print(
-        f"❌ Lỗi Slash Commands: {e}"
-    )
-
-# ==========================================
-# ĐĂNG KÝ VIEW
-# ==========================================
+    print(f"❌ Lỗi Slash Commands: {e}")
 
 try:
-
-    bot.add_view(
-        OrderView()
-    )
-
-    bot.add_view(
-        TicketView()
-    )
-
-    print(
-        "✅ Đã đăng ký Order/Ticket Views"
-    )
-
+    bot.add_view(OrderView())
+    bot.add_view(TicketView())
+    print("✅ Đã đăng ký Order/Ticket Views")
 except Exception as e:
-
-    print(
-        f"⚠️ View Error: {e}"
-    )
+    print(f"⚠️ View Error: {e}")
 ```
-
-# ==========================================
-
-# MESSAGE
-
-# ==========================================
 
 @bot.event
 async def on_message(message):
+if message.author.bot:
+return
 
 ```
-if message.author.bot:
-    return
-
-# ==========================================
-# PHÂN TÍCH FILE .LOG
-# ==========================================
-
 try:
-
-    handled = await handle_log(
-        message
-    )
+    handled = await handle_log(message)
 
     if handled:
         return
 
 except Exception as e:
-
-    print(
-        f"[CloudAI] Log Handler Error: {e}"
-    )
-
-# ==========================================
-# AI CHAT KHI MENTION BOT
-# ==========================================
+    print(f"[CloudAI] Log Handler Error: {e}")
 
 if bot.user and bot.user in message.mentions:
-
     question = (
         message.content
-        .replace(
-            f"<@{bot.user.id}>",
-            ""
-        )
-        .replace(
-            f"<@!{bot.user.id}>",
-            ""
-        )
+        .replace(f"<@{bot.user.id}>", "")
+        .replace(f"<@!{bot.user.id}>", "")
         .strip()
     )
 
     if not question:
-
         await message.reply(
             "👋 Xin chào! Hãy hỏi mình điều gì đó nhé."
         )
-
         return
 
     async with message.channel.typing():
-
         try:
-
             answer = await ask_ai(
                 str(message.author.id),
                 question
             )
 
         except Exception as e:
-
-            print(
-                f"[CloudAI] AI Error: {e}"
-            )
-
+            print(f"[CloudAI] AI Error: {e}")
             answer = (
                 "❌ AI đang gặp lỗi. "
                 "Vui lòng thử lại sau."
             )
 
     if len(answer) > 2000:
+        answer = answer[:1990] + "..."
 
-        answer = (
-            answer[:1990]
-            + "..."
-        )
+    await message.reply(answer)
 
-    await message.reply(
-        answer
-    )
-
-await bot.process_commands(
-    message
-)
+await bot.process_commands(message)
 ```
-
-# ==========================================
-
-# DASHBOARD
-
-# ==========================================
 
 def run_dashboard():
-
-```
 port = int(
-    os.environ.get(
-        "PORT",
-        8080
-    )
+os.environ.get(
+"PORT",
+8080
+)
 )
 
+```
 app.run(
     host="0.0.0.0",
     port=port
@@ -240,16 +135,6 @@ target=run_dashboard,
 daemon=True
 ).start()
 
-# ==========================================
+print("🚀 Đang khởi động CloudAI...")
 
-# START BOT
-
-# ==========================================
-
-print(
-"🚀 Đang khởi động CloudAI..."
-)
-
-bot.run(
-DISCORD_TOKEN
-)
+bot.run(DISCORD_TOKEN)
