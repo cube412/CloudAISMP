@@ -1,6 +1,5 @@
 import os
 import threading
-
 import discord
 from discord.ext import commands
 
@@ -54,14 +53,14 @@ try:
     synced = await bot.tree.sync()
     print(f"✅ Đồng bộ {len(synced)} Slash Commands")
 except Exception as e:
-    print(f"❌ Lỗi đồng bộ Slash Commands: {e}")
+    print(f"❌ Lỗi đồng bộ: {e}")
 
 try:
     bot.add_view(OrderView())
     bot.add_view(TicketView())
-    print("✅ OrderView và TicketView đã đăng ký")
+    print("✅ Order/Ticket View đã đăng ký")
 except Exception as e:
-    print(f"⚠️ Lỗi đăng ký View: {e}")
+    print(f"⚠️ View Error: {e}")
 ```
 
 @bot.event
@@ -72,26 +71,15 @@ return
 ```
 try:
     handled = await handle_log(message)
-
     if handled:
         return
-
 except Exception as e:
-    print(f"[CloudAI] Log Handler Error: {e}")
+    print(f"[CloudAI] Log Error: {e}")
 
 if bot.user and bot.user in message.mentions:
     question = message.content
-
-    question = question.replace(
-        f"<@{bot.user.id}>",
-        ""
-    )
-
-    question = question.replace(
-        f"<@!{bot.user.id}>",
-        ""
-    )
-
+    question = question.replace(f"<@{bot.user.id}>", "")
+    question = question.replace(f"<@!{bot.user.id}>", "")
     question = question.strip()
 
     if not question:
@@ -106,14 +94,9 @@ if bot.user and bot.user in message.mentions:
                 str(message.author.id),
                 question
             )
-
         except Exception as e:
             print(f"[CloudAI] AI Error: {e}")
-
-            answer = (
-                "❌ AI đang gặp lỗi. "
-                "Vui lòng thử lại sau."
-            )
+            answer = "❌ AI đang gặp lỗi."
 
     if len(answer) > 2000:
         answer = answer[:1990] + "..."
@@ -124,26 +107,16 @@ await bot.process_commands(message)
 ```
 
 def run_dashboard():
-port = int(
-os.environ.get(
-"PORT",
-8080
-)
-)
-
-```
+port = int(os.environ.get("PORT", 8080))
 app.run(
-    host="0.0.0.0",
-    port=port
+host="0.0.0.0",
+port=port
 )
-```
 
-dashboard_thread = threading.Thread(
+threading.Thread(
 target=run_dashboard,
 daemon=True
-)
-
-dashboard_thread.start()
+).start()
 
 print("🚀 Đang khởi động CloudAI...")
 
