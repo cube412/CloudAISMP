@@ -2,8 +2,7 @@ import discord
 from discord import app_commands
 
 from ai import ask_ai
-from plans import get_all_plans
-from orders import OrderView, create_order_embed
+from orders import OrderView
 
 
 class CloudCommands(app_commands.Group):
@@ -14,30 +13,46 @@ class CloudCommands(app_commands.Group):
             description="CloudAI Commands"
         )
 
+    # =========================
+    # PING
+    # =========================
+
     @app_commands.command(
         name="ping",
         description="Kiểm tra bot"
     )
-    async def ping(self, interaction: discord.Interaction):
+    async def ping(
+        self,
+        interaction: discord.Interaction
+    ):
 
         await interaction.response.send_message(
-            f"🏓 Pong!\nLatency: {round(interaction.client.latency * 1000)} ms"
+            f"🏓 Pong!\n"
+            f"Latency: {round(interaction.client.latency * 1000)} ms"
         )
+
+    # =========================
+    # HELP
+    # =========================
 
     @app_commands.command(
         name="help",
         description="Hiện hướng dẫn"
     )
-    async def help(self, interaction: discord.Interaction):
+    async def help(
+        self,
+        interaction: discord.Interaction
+    ):
 
         embed = discord.Embed(
             title="🤖 CloudAI",
+            description="Danh sách lệnh CloudAI",
             color=0x00BFFF
         )
 
         embed.add_field(
             name="/cloud ai",
-            value="Hỏi AI",
+            value="Hỏi CloudAI",
             inline=False
         )
 
@@ -49,7 +64,7 @@ class CloudCommands(app_commands.Group):
 
         embed.add_field(
             name="/cloud tps",
-            value="Giải thích TPS",
+            value="Xem thông tin TPS",
             inline=False
         )
 
@@ -60,14 +75,8 @@ class CloudCommands(app_commands.Group):
         )
 
         embed.add_field(
-            name="/cloud plans",
-            value="Xem bảng giá CloudAI",
-            inline=False
-        )
-
-        embed.add_field(
             name="/cloud order",
-            value="Đặt một bot riêng",
+            value="Đặt một Discord Bot riêng",
             inline=False
         )
 
@@ -75,53 +84,9 @@ class CloudCommands(app_commands.Group):
             embed=embed
         )
 
-    @app_commands.command(
-        name="plans",
-        description="Xem bảng giá CloudAI"
-    )
-    async def plans(self, interaction: discord.Interaction):
-
-        plans = get_all_plans()
-
-        embed = discord.Embed(
-            title="☁️ CloudAI — Bảng giá",
-            description="Nhận làm Discord Bot AI theo yêu cầu",
-            color=0x00BFFF
-        )
-
-        for plan_id, plan in plans.items():
-
-            features = "\n".join(
-                f"• {feature}"
-                for feature in plan["features"]
-            )
-
-            embed.add_field(
-                name=f"{plan['name']} — {plan['price']:,}đ",
-                value=features,
-                inline=False
-            )
-
-        embed.set_footer(
-            text="📩 Dùng /cloud order để đặt bot"
-        )
-
-        await interaction.response.send_message(
-            embed=embed
-        )
-
-    @app_commands.command(
-        name="order",
-        description="Đặt một bot CloudAI riêng"
-    )
-    async def order(self, interaction: discord.Interaction):
-
-        embed = create_order_embed()
-
-        await interaction.response.send_message(
-            embed=embed,
-            view=OrderView()
-        )
+    # =========================
+    # AI
+    # =========================
 
     @app_commands.command(
         name="ai",
@@ -146,7 +111,13 @@ class CloudCommands(app_commands.Group):
         if len(answer) > 2000:
             answer = answer[:1990] + "..."
 
-        await interaction.followup.send(answer)
+        await interaction.followup.send(
+            answer
+        )
+
+    # =========================
+    # PLUGIN
+    # =========================
 
     @app_commands.command(
         name="plugin",
@@ -171,21 +142,30 @@ class CloudCommands(app_commands.Group):
         if len(answer) > 2000:
             answer = answer[:1990] + "..."
 
-        await interaction.followup.send(answer)
+        await interaction.followup.send(
+            answer
+        )
+
+    # =========================
+    # TPS
+    # =========================
 
     @app_commands.command(
         name="tps",
-        description="Giải thích TPS"
+        description="Giải thích TPS Minecraft"
     )
-    async def tps(self, interaction: discord.Interaction):
+    async def tps(
+        self,
+        interaction: discord.Interaction
+    ):
 
         embed = discord.Embed(
             title="⚡ TPS Minecraft",
             description=(
-                "🟢 20 TPS = Server rất mượt\n\n"
-                "🟡 18-19 TPS = Bình thường\n\n"
-                "🟠 15-17 TPS = Có dấu hiệu lag\n\n"
-                "🔴 Dưới 15 TPS = Server đang lag nặng"
+                "🟢 **20 TPS** = Server rất mượt\n\n"
+                "🟡 **18-19 TPS** = Bình thường\n\n"
+                "🟠 **15-17 TPS** = Có dấu hiệu lag\n\n"
+                "🔴 **Dưới 15 TPS** = Server lag"
             ),
             color=0x00BFFF
         )
@@ -194,11 +174,18 @@ class CloudCommands(app_commands.Group):
             embed=embed
         )
 
+    # =========================
+    # HELP MINECRAFT
+    # =========================
+
     @app_commands.command(
         name="helpmc",
         description="Hướng dẫn Minecraft"
     )
-    async def helpmc(self, interaction: discord.Interaction):
+    async def helpmc(
+        self,
+        interaction: discord.Interaction
+    ):
 
         embed = discord.Embed(
             title="🎮 Minecraft Assistant",
@@ -226,4 +213,38 @@ class CloudCommands(app_commands.Group):
 
         await interaction.response.send_message(
             embed=embed
+        )
+
+    # =========================
+    # ĐẶT BOT
+    # =========================
+
+    @app_commands.command(
+        name="order",
+        description="Đặt một Discord Bot riêng"
+    )
+    async def order(
+        self,
+        interaction: discord.Interaction
+    ):
+
+        embed = discord.Embed(
+            title="🛒 Đặt CloudAI",
+            description=(
+                "Bạn muốn sở hữu một Discord Bot riêng?\n\n"
+                "🤖 **Tên bot:** Tùy chọn\n"
+                "🖼️ **Avatar:** Tùy chọn\n"
+                "🎯 **Chủ đề:** Tùy chọn\n"
+                "😎 **Tính cách:** Tùy chọn\n"
+                "⚙️ **Chức năng:** Tùy chọn\n"
+                "📦 **Gói:** Chọn trong ticket\n"
+                "💳 **Thanh toán:** Chọn trong ticket\n\n"
+                "Nhấn **🤖 Đặt Bot** để bắt đầu."
+            ),
+            color=0x00BFFF
+        )
+
+        await interaction.response.send_message(
+            embed=embed,
+            view=OrderView()
         )
