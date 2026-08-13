@@ -1,277 +1,1064 @@
-import os
-import threading
-
 import discord
-from discord.ext import commands
+from discord.ui import Modal, TextInput
+from typing import Optional
 
-from config import DISCORD_TOKEN
-from ai import ask_ai
-from minecraft import handle_log
-from commands import CloudCommands
-from admin import AdminCommands
-from dashboard import app
+OWNER_ID = 1514447473748475975
+ORDER_CHANNEL_NAME = "📦đơn-hàng"
+TICKET_CATEGORY_ID = None
 
+orders = {}
+
+def get_order(user_id):
+if user_id not in orders:
+orders[user_id] = {
+"name": "Chưa chọn",
+"avatar": "Chưa chọn",
+"topic": "Chưa chọn",
+"personality": "Chưa chọn",
+"features": "Chưa chọn",
+"plan": "Chưa chọn",
+"payment": "Chưa chọn",
+"note": "Chưa có"
+}
+
+```
+return orders[user_id]
+```
+
+def create_order_embed(user_id):
+
+```
+order = get_order(user_id)
+
+embed = discord.Embed(
+    title="🤖 ĐẶT BOT CLOUD AI",
+    description=(
+        "Hãy chọn thông tin cho bot của bạn.\n"
+        "Bạn có thể thay đổi trước khi xác nhận."
+    ),
+    color=0x00BFFF
+)
+
+embed.add_field(name="🤖 Tên bot", value=order["name"], inline=False)
+embed.add_field(name="🖼️ Avatar", value=order["avatar"], inline=False)
+embed.add_field(name="🎯 Chủ đề", value=order["topic"], inline=False)
+embed.add_field(name="😎 Tính cách", value=order["personality"], inline=False)
+embed.add_field(name="⚙️ Chức năng", value=order["features"], inline=False)
+embed.add_field(name="📦 Gói", value=order["plan"], inline=True)
+embed.add_field(name="💳 Thanh toán", value=order["payment"], inline=True)
+embed.add_field(name="📝 Ghi chú", value=order["note"], inline=False)
+
+embed.set_footer(text="CloudAI Order System")
+
+return embed
+```
 
 # =========================================================
-# INTENTS
-# =========================================================
 
-intents = discord.Intents.default()
-intents.message_content = True
-
+# MODALS
 
 # =========================================================
-# BOT
+
+class NameModal(Modal):
+
+```
+def __init__(self, user_id):
+    super().__init__(title="🤖 Đặt tên bot")
+    self.user_id = user_id
+
+    self.name = TextInput(
+        label="Tên bot",
+        placeholder="Ví dụ: MyAI",
+        max_length=32
+    )
+
+    self.add_item(self.name)
+
+async def on_submit(self, interaction):
+    orders[self.user_id]["name"] = self.name.value
+
+    await interaction.response.edit_message(
+        embed=create_order_embed(self.user_id),
+        view=OrderPanel(self.user_id)
+    )
+```
+
+class AvatarModal(Modal):
+
+```
+def __init__(self, user_id):
+    super().__init__(title="🖼️ Avatar bot")
+    self.user_id = user_id
+
+    self.avatar = TextInput(
+        label="Link ảnh Avatar",
+        placeholder="https://..."
+    )
+
+    self.add_item(self.avatar)
+
+async def on_submit(self, interaction):
+    orders[self.user_id]["avatar"] = self.avatar.value
+
+    await interaction.response.edit_message(
+        embed=create_order_embed(self.user_id),
+        view=OrderPanel(self.user_id)
+    )
+```
+
+class TopicModal(Modal):
+
+```
+def __init__(self, user_id):
+    super().__init__(title="🎯 Chủ đề bot")
+    self.user_id = user_id
+
+    self.topic = TextInput(
+        label="Chủ đề",
+        placeholder="Minecraft, Anime, Gaming..."
+    )
+
+    self.add_item(self.topic)
+
+async def on_submit(self, interaction):
+    orders[self.user_id]["topic"] = self.topic.value
+
+    await interaction.response.edit_message(
+        embed=create_order_embed(self.user_id),
+        view=OrderPanel(self.user_id)
+    )
+```
+
+class PersonalityModal(Modal):
+
+```
+def __init__(self, user_id):
+    super().__init__(title="😎 Tính cách bot")
+    self.user_id = user_id
+
+    self.personality = TextInput(
+        label="Tính cách",
+        placeholder="Vui vẻ, chill, nghiêm túc..."
+    )
+
+    self.add_item(self.personality)
+
+async def on_submit(self, interaction):
+    orders[self.user_id]["personality"] = self.personality.value
+
+    await interaction.response.edit_message(
+        embed=create_order_embed(self.user_id),
+        view=OrderPanel(self.user_id)
+    )
+```
+
+class FeaturesModal(Modal):
+
+```
+def __init__(self, user_id):
+    super().__init__(title="⚙️ Chức năng bot")
+    self.user_id = user_id
+
+    self.features = TextInput(
+        label="Chức năng",
+        placeholder="AI Chat, Welcome, Moderation...",
+        style=discord.TextStyle.paragraph,
+        max_length=500
+    )
+
+    self.add_item(self.features)
+
+async def on_submit(self, interaction):
+    orders[self.user_id]["features"] = self.features.value
+
+    await interaction.response.edit_message(
+        embed=create_order_embed(self.user_id),
+        view=OrderPanel(self.user_id)
+    )
+```
+
+class PaymentNoteModal(Modal):
+
+```
+def __init__(self, user_id):
+    super().__init__(title="📝 Ghi chú thanh toán")
+    self.user_id = user_id
+
+    self.note = TextInput(
+        label="Ghi chú",
+        placeholder="Ví dụ: Tôi đã thanh toán gói VIP",
+        style=discord.TextStyle.paragraph,
+        max_length=300,
+        required=False
+    )
+
+    self.add_item(self.note)
+
+async def on_submit(self, interaction):
+
+    value = self.note.value.strip()
+
+    if not value:
+        value = "Không có ghi chú"
+
+    orders[self.user_id]["note"] = value
+
+    await interaction.response.edit_message(
+        embed=create_order_embed(self.user_id),
+        view=OrderPanel(self.user_id)
+    )
+```
+
 # =========================================================
 
-class CloudAIBot(commands.Bot):
+# PLAN
 
-    def __init__(self):
+# =========================================================
 
-        super().__init__(
-            command_prefix="!",
-            intents=intents,
-            help_command=None
+class PlanSelect(discord.ui.Select):
+
+```
+def __init__(self, user_id):
+
+    self.user_id = user_id
+
+    options = [
+        discord.SelectOption(
+            label="Basic",
+            description="AI Chat + Memory - 20.000đ",
+            emoji="🟢",
+            value="Basic - 20.000đ"
+        ),
+        discord.SelectOption(
+            label="VIP",
+            description="AI + Welcome + Moderation - 40.000đ",
+            emoji="🔵",
+            value="VIP - 40.000đ"
+        ),
+        discord.SelectOption(
+            label="Custom",
+            description="Bot theo yêu cầu - từ 50.000đ",
+            emoji="🔥",
+            value="Custom - từ 50.000đ"
+        )
+    ]
+
+    super().__init__(
+        placeholder="📦 Chọn gói bot",
+        options=options
+    )
+
+async def callback(self, interaction):
+
+    orders[self.user_id]["plan"] = self.values[0]
+
+    await interaction.response.edit_message(
+        content=None,
+        embed=create_order_embed(self.user_id),
+        view=OrderPanel(self.user_id)
+    )
+```
+
+class PlanView(discord.ui.View):
+
+```
+def __init__(self, user_id):
+    super().__init__(timeout=60)
+    self.add_item(PlanSelect(user_id))
+```
+
+# =========================================================
+
+# PAYMENT
+
+# =========================================================
+
+class PaymentSelect(discord.ui.Select):
+
+```
+def __init__(self, user_id):
+
+    self.user_id = user_id
+
+    options = [
+        discord.SelectOption(
+            label="Chuyển khoản",
+            description="Thanh toán bằng chuyển khoản",
+            emoji="🏦",
+            value="Chuyển khoản"
+        ),
+        discord.SelectOption(
+            label="Thẻ điện thoại",
+            description="Thanh toán bằng thẻ",
+            emoji="💳",
+            value="Thẻ điện thoại"
+        ),
+        discord.SelectOption(
+            label="Chưa thanh toán",
+            description="Thanh toán sau",
+            emoji="⏳",
+            value="Chưa thanh toán"
+        )
+    ]
+
+    super().__init__(
+        placeholder="💳 Chọn phương thức thanh toán",
+        options=options
+    )
+
+async def callback(self, interaction):
+
+    orders[self.user_id]["payment"] = self.values[0]
+
+    await interaction.response.edit_message(
+        content=None,
+        embed=create_order_embed(self.user_id),
+        view=OrderPanel(self.user_id)
+    )
+```
+
+class PaymentView(discord.ui.View):
+
+```
+def __init__(self, user_id):
+    super().__init__(timeout=60)
+    self.add_item(PaymentSelect(user_id))
+```
+
+# =========================================================
+
+# PAYMENT NOTE BUTTON
+
+# =========================================================
+
+class PaymentNoteButton(discord.ui.Button):
+
+```
+def __init__(self, user_id):
+
+    self.user_id = user_id
+
+    super().__init__(
+        label="Ghi chú thanh toán",
+        emoji="📝",
+        style=discord.ButtonStyle.secondary,
+        row=2
+    )
+
+async def callback(self, interaction):
+
+    await interaction.response.send_modal(
+        PaymentNoteModal(self.user_id)
+    )
+```
+
+# =========================================================
+
+# DUYỆT / TỪ CHỐI + DM
+
+# =========================================================
+
+class OrderDecisionView(discord.ui.View):
+
+```
+def __init__(self, user_id):
+
+    super().__init__(timeout=None)
+    self.user_id = user_id
+
+@discord.ui.button(
+    label="Duyệt đơn",
+    emoji="✅",
+    style=discord.ButtonStyle.success,
+    custom_id="cloudai_approve_order"
+)
+async def approve(self, interaction, button):
+
+    if interaction.user.id != OWNER_ID:
+
+        await interaction.response.send_message(
+            "❌ Bạn không có quyền duyệt đơn.",
+            ephemeral=True
         )
 
-        self.cloud_commands = CloudCommands()
-        self.admin_commands = AdminCommands()
-
-    async def setup_hook(self):
-
-        print("🔧 Đang đăng ký Slash Commands...")
-
-        # -------------------------------------------------
-        # CLOUD COMMANDS
-        # -------------------------------------------------
-
-        try:
-
-            self.tree.add_command(
-                self.cloud_commands
-            )
-
-            print("✅ Đã đăng ký CloudCommands")
-
-        except discord.app_commands.errors.CommandAlreadyRegistered:
-
-            print("⚠️ CloudCommands đã tồn tại")
-
-        except Exception as e:
-
-            print(
-                f"❌ Lỗi CloudCommands: {e}"
-            )
-
-        # -------------------------------------------------
-        # ADMIN COMMANDS
-        # -------------------------------------------------
-
-        try:
-
-            self.tree.add_command(
-                self.admin_commands
-            )
-
-            print("✅ Đã đăng ký AdminCommands")
-
-        except discord.app_commands.errors.CommandAlreadyRegistered:
-
-            print("⚠️ AdminCommands đã tồn tại")
-
-        except Exception as e:
-
-            print(
-                f"❌ Lỗi AdminCommands: {e}"
-            )
-
-        # -------------------------------------------------
-        # SYNC
-        # -------------------------------------------------
-
-        try:
-
-            synced = await self.tree.sync()
-
-            print(
-                f"✅ Đồng bộ {len(synced)} Slash Commands"
-            )
-
-            for command in synced:
-
-                print(
-                    f"   /{command.name}"
-                )
-
-        except Exception as e:
-
-            print(
-                f"❌ Lỗi đồng bộ Slash Commands: {e}"
-            )
-
-
-# =========================================================
-# TẠO BOT
-# =========================================================
-
-bot = CloudAIBot()
-
-
-# =========================================================
-# READY
-# =========================================================
-
-@bot.event
-async def on_ready():
-
-    print("=" * 40)
-
-    print(
-        f"🤖 Đăng nhập thành công: {bot.user}"
-    )
-
-    print(
-        f"🆔 Bot ID: {bot.user.id}"
-    )
-
-    print("=" * 40)
-
-    await bot.change_presence(
-        activity=discord.Activity(
-            type=discord.ActivityType.watching,
-            name="CloudAI V6.3"
-        )
-    )
-
-
-# =========================================================
-# MESSAGE
-# =========================================================
-
-@bot.event
-async def on_message(message):
-
-    if message.author.bot:
         return
 
-    # -----------------------------------------------------
-    # PHÂN TÍCH FILE LOG
-    # -----------------------------------------------------
+    await interaction.response.edit_message(
+        content="🟢 **ĐƠN ĐÃ ĐƯỢC DUYỆT**",
+        view=None
+    )
 
     try:
 
-        handled = await handle_log(message)
+        user = await interaction.client.fetch_user(
+            self.user_id
+        )
 
-        if handled:
-            return
+        embed = discord.Embed(
+            title="🎉 ĐƠN HÀNG ĐÃ ĐƯỢC DUYỆT",
+            description=(
+                "Đơn đặt CloudAI của bạn đã được "
+                "**chủ bot duyệt**.\n\n"
+                "👑 Bạn có thể tiếp tục trao đổi "
+                "với chủ bot để hoàn thiện bot."
+            ),
+            color=0x00FF66
+        )
+
+        embed.set_footer(
+            text="CloudAI Order System"
+        )
+
+        await user.send(embed=embed)
+
+    except discord.Forbidden:
+
+        print(
+            f"[CloudAI] Không thể DM user "
+            f"{self.user_id}"
+        )
 
     except Exception as e:
 
         print(
-            f"❌ Lỗi handle_log: {e}"
+            f"[CloudAI] Lỗi gửi DM: {e}"
         )
 
-    # -----------------------------------------------------
-    # AI KHI ĐƯỢC MENTION
-    # -----------------------------------------------------
+@discord.ui.button(
+    label="Từ chối đơn",
+    emoji="❌",
+    style=discord.ButtonStyle.danger,
+    custom_id="cloudai_reject_order"
+)
+async def reject(self, interaction, button):
 
-    if bot.user and bot.user in message.mentions:
+    if interaction.user.id != OWNER_ID:
 
-        question = (
-            message.content
-            .replace(
-                f"<@{bot.user.id}>",
-                ""
-            )
-            .replace(
-                f"<@!{bot.user.id}>",
-                ""
-            )
-            .strip()
+        await interaction.response.send_message(
+            "❌ Bạn không có quyền từ chối đơn.",
+            ephemeral=True
         )
 
-        if not question:
+        return
 
-            await message.reply(
-                "👋 Xin chào! Hãy hỏi mình điều gì đó nhé."
+    await interaction.response.edit_message(
+        content="🔴 **ĐƠN ĐÃ BỊ TỪ CHỐI**",
+        view=None
+    )
+
+    try:
+
+        user = await interaction.client.fetch_user(
+            self.user_id
+        )
+
+        embed = discord.Embed(
+            title="❌ ĐƠN HÀNG BỊ TỪ CHỐI",
+            description=(
+                "Đơn đặt CloudAI của bạn "
+                "đã bị **từ chối**.\n\n"
+                "Bạn có thể liên hệ chủ bot "
+                "để biết thêm thông tin."
+            ),
+            color=0xFF3333
+        )
+
+        embed.set_footer(
+            text="CloudAI Order System"
+        )
+
+        await user.send(embed=embed)
+
+    except discord.Forbidden:
+
+        print(
+            f"[CloudAI] Không thể DM user "
+            f"{self.user_id}"
+        )
+
+    except Exception as e:
+
+        print(
+            f"[CloudAI] Lỗi gửi DM: {e}"
+        )
+```
+
+# =========================================================
+
+# CONFIRM
+
+# =========================================================
+
+class ConfirmButton(discord.ui.Button):
+
+```
+def __init__(self, user_id):
+
+    self.user_id = user_id
+
+    super().__init__(
+        label="Xác nhận đơn",
+        emoji="✅",
+        style=discord.ButtonStyle.success,
+        row=3
+    )
+
+async def callback(self, interaction):
+
+    order = get_order(self.user_id)
+
+    check = {
+        "name": "Tên bot",
+        "avatar": "Avatar",
+        "topic": "Chủ đề",
+        "personality": "Tính cách",
+        "features": "Chức năng",
+        "plan": "Gói",
+        "payment": "Thanh toán"
+    }
+
+    missing = [
+        label
+        for key, label in check.items()
+        if order[key] == "Chưa chọn"
+    ]
+
+    if missing:
+
+        await interaction.response.send_message(
+            "❌ Bạn chưa chọn đủ:\n\n"
+            + "\n".join(
+                f"• {x}"
+                for x in missing
+            ),
+            ephemeral=True
+        )
+
+        return
+
+    await interaction.response.send_message(
+        "✅ **Đã gửi đơn!**\n"
+        "⏳ Vui lòng chờ chủ bot kiểm tra.",
+        ephemeral=True
+    )
+
+    embed = discord.Embed(
+        title="🔔 ĐƠN BOT MỚI",
+        description="Có khách vừa gửi một đơn đặt CloudAI.",
+        color=0x00BFFF
+    )
+
+    embed.add_field(
+        name="👤 Khách hàng",
+        value=interaction.user.mention,
+        inline=False
+    )
+
+    embed.add_field(
+        name="🆔 ID",
+        value=str(interaction.user.id),
+        inline=False
+    )
+
+    embed.add_field(
+        name="🤖 Tên bot",
+        value=order["name"],
+        inline=True
+    )
+
+    embed.add_field(
+        name="🖼️ Avatar",
+        value=order["avatar"],
+        inline=False
+    )
+
+    embed.add_field(
+        name="🎯 Chủ đề",
+        value=order["topic"],
+        inline=False
+    )
+
+    embed.add_field(
+        name="😎 Tính cách",
+        value=order["personality"],
+        inline=False
+    )
+
+    embed.add_field(
+        name="⚙️ Chức năng",
+        value=order["features"],
+        inline=False
+    )
+
+    embed.add_field(
+        name="📦 Gói",
+        value=order["plan"],
+        inline=True
+    )
+
+    embed.add_field(
+        name="💳 Thanh toán",
+        value=order["payment"],
+        inline=True
+    )
+
+    embed.add_field(
+        name="📝 Ghi chú",
+        value=order["note"],
+        inline=False
+    )
+
+    embed.add_field(
+        name="📌 Trạng thái",
+        value="🟡 CHỜ DUYỆT",
+        inline=False
+    )
+
+    embed.set_footer(
+        text="CloudAI Order System"
+    )
+
+    order_channel = None
+
+    if interaction.guild:
+
+        for channel in interaction.guild.text_channels:
+
+            if channel.name == ORDER_CHANNEL_NAME:
+
+                order_channel = channel
+                break
+
+    if order_channel is None:
+
+        await interaction.channel.send(
+            f"⚠️ Không tìm thấy kênh "
+            f"`{ORDER_CHANNEL_NAME}`."
+        )
+
+        return
+
+    try:
+
+        await order_channel.send(
+            embed=embed,
+            view=OrderDecisionView(
+                self.user_id
+            )
+        )
+
+    except discord.Forbidden:
+
+        await interaction.channel.send(
+            f"❌ Bot không có quyền gửi vào "
+            f"`{ORDER_CHANNEL_NAME}`."
+        )
+
+        return
+
+    await interaction.channel.send(
+        "📨 **Đơn đã được gửi cho chủ bot!**\n"
+        "⏳ Vui lòng chờ duyệt."
+    )
+```
+
+# =========================================================
+
+# ORDER PANEL
+
+# =========================================================
+
+class OrderPanel(discord.ui.View):
+
+```
+def __init__(self, user_id):
+
+    super().__init__(timeout=None)
+
+    self.user_id = user_id
+
+    self.add_item(NameButton(user_id))
+    self.add_item(AvatarButton(user_id))
+    self.add_item(TopicButton(user_id))
+    self.add_item(PersonalityButton(user_id))
+    self.add_item(FeaturesButton(user_id))
+    self.add_item(PlanButton(user_id))
+    self.add_item(PaymentButton(user_id))
+    self.add_item(PaymentNoteButton(user_id))
+    self.add_item(ConfirmButton(user_id))
+```
+
+# =========================================================
+
+# BUTTONS
+
+# =========================================================
+
+class NameButton(discord.ui.Button):
+
+```
+def __init__(self, user_id):
+
+    self.user_id = user_id
+
+    super().__init__(
+        label="Đặt tên",
+        emoji="🤖",
+        style=discord.ButtonStyle.primary,
+        row=0
+    )
+
+async def callback(self, interaction):
+
+    await interaction.response.send_modal(
+        NameModal(self.user_id)
+    )
+```
+
+class AvatarButton(discord.ui.Button):
+
+```
+def __init__(self, user_id):
+
+    self.user_id = user_id
+
+    super().__init__(
+        label="Avatar",
+        emoji="🖼️",
+        style=discord.ButtonStyle.primary,
+        row=0
+    )
+
+async def callback(self, interaction):
+
+    await interaction.response.send_modal(
+        AvatarModal(self.user_id)
+    )
+```
+
+class TopicButton(discord.ui.Button):
+
+```
+def __init__(self, user_id):
+
+    self.user_id = user_id
+
+    super().__init__(
+        label="Chủ đề",
+        emoji="🎯",
+        style=discord.ButtonStyle.primary,
+        row=0
+    )
+
+async def callback(self, interaction):
+
+    await interaction.response.send_modal(
+        TopicModal(self.user_id)
+    )
+```
+
+class PersonalityButton(discord.ui.Button):
+
+```
+def __init__(self, user_id):
+
+    self.user_id = user_id
+
+    super().__init__(
+        label="Tính cách",
+        emoji="😎",
+        style=discord.ButtonStyle.primary,
+        row=1
+    )
+
+async def callback(self, interaction):
+
+    await interaction.response.send_modal(
+        PersonalityModal(self.user_id)
+    )
+```
+
+class FeaturesButton(discord.ui.Button):
+
+```
+def __init__(self, user_id):
+
+    self.user_id = user_id
+
+    super().__init__(
+        label="Chức năng",
+        emoji="⚙️",
+        style=discord.ButtonStyle.primary,
+        row=1
+    )
+
+async def callback(self, interaction):
+
+    await interaction.response.send_modal(
+        FeaturesModal(self.user_id)
+    )
+```
+
+class PlanButton(discord.ui.Button):
+
+```
+def __init__(self, user_id):
+
+    self.user_id = user_id
+
+    super().__init__(
+        label="Chọn gói",
+        emoji="📦",
+        style=discord.ButtonStyle.secondary,
+        row=2
+    )
+
+async def callback(self, interaction):
+
+    await interaction.response.send_message(
+        "📦 **Chọn gói bot:**",
+        view=PlanView(self.user_id),
+        ephemeral=True
+    )
+```
+
+class PaymentButton(discord.ui.Button):
+
+```
+def __init__(self, user_id):
+
+    self.user_id = user_id
+
+    super().__init__(
+        label="Thanh toán",
+        emoji="💳",
+        style=discord.ButtonStyle.secondary,
+        row=2
+    )
+
+async def callback(self, interaction):
+
+    await interaction.response.send_message(
+        "💳 **Chọn phương thức thanh toán:**",
+        view=PaymentView(self.user_id),
+        ephemeral=True
+    )
+```
+
+# =========================================================
+
+# TICKET
+
+# =========================================================
+
+class TicketView(discord.ui.View):
+
+```
+def __init__(self):
+
+    super().__init__(timeout=None)
+
+@discord.ui.button(
+    label="Đóng Ticket",
+    emoji="🔒",
+    style=discord.ButtonStyle.danger,
+    custom_id="cloudai_close_ticket"
+)
+async def close_ticket(self, interaction, button):
+
+    if interaction.user.id != OWNER_ID:
+
+        await interaction.response.send_message(
+            "❌ Chỉ chủ bot mới có thể đóng ticket!",
+            ephemeral=True
+        )
+
+        return
+
+    await interaction.response.send_message(
+        "🔒 Đang đóng ticket..."
+    )
+
+    await interaction.channel.delete()
+```
+
+# =========================================================
+
+# ORDER VIEW
+
+# =========================================================
+
+class OrderView(discord.ui.View):
+
+```
+def __init__(self):
+
+    super().__init__(timeout=None)
+
+@discord.ui.button(
+    label="Đặt Bot",
+    emoji="🤖",
+    style=discord.ButtonStyle.primary,
+    custom_id="cloudai_order"
+)
+async def order_button(self, interaction, button):
+
+    await interaction.response.defer(
+        ephemeral=True
+    )
+
+    guild = interaction.guild
+
+    if guild is None:
+
+        await interaction.followup.send(
+            "❌ Chỉ có thể đặt bot trong server Discord.",
+            ephemeral=True
+        )
+
+        return
+
+    ticket_name = f"ticket-{interaction.user.id}"
+
+    for channel in guild.text_channels:
+
+        if channel.name == ticket_name:
+
+            await interaction.followup.send(
+                f"❌ Bạn đã có ticket: {channel.mention}",
+                ephemeral=True
             )
 
             return
 
-        async with message.channel.typing():
+    overwrites = {
 
-            try:
+        guild.default_role:
+            discord.PermissionOverwrite(
+                view_channel=False
+            ),
 
-                answer = await ask_ai(
-                    str(message.author.id),
-                    question
-                )
-
-            except Exception as e:
-
-                print(
-                    f"❌ Lỗi AI: {e}"
-                )
-
-                answer = (
-                    "❌ CloudAI đang gặp lỗi khi xử lý câu hỏi."
-                )
-
-        if len(answer) > 2000:
-
-            answer = (
-                answer[:1990]
-                + "..."
+        interaction.user:
+            discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True,
+                read_message_history=True,
+                embed_links=True
             )
+    }
 
-        await message.reply(
-            answer
+    if guild.me:
+
+        overwrites[guild.me] = (
+            discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True,
+                read_message_history=True,
+                embed_links=True,
+                manage_channels=True
+            )
         )
 
-    # -----------------------------------------------------
-    # PREFIX COMMAND
-    # -----------------------------------------------------
+    owner = guild.get_member(OWNER_ID)
 
-    await bot.process_commands(
-        message
-    )
+    if owner:
 
-
-# =========================================================
-# DASHBOARD
-# =========================================================
-
-def run_dashboard():
-
-    port = int(
-        os.environ.get(
-            "PORT",
-            8080
+        overwrites[owner] = (
+            discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True,
+                read_message_history=True,
+                embed_links=True
+            )
         )
+
+    category = None
+
+    if TICKET_CATEGORY_ID is not None:
+
+        category = guild.get_channel(
+            TICKET_CATEGORY_ID
+        )
+
+    try:
+
+        channel = await guild.create_text_channel(
+            ticket_name,
+            category=category,
+            overwrites=overwrites,
+            reason="CloudAI Order"
+        )
+
+    except discord.Forbidden:
+
+        await interaction.followup.send(
+            "❌ CloudAI không có quyền tạo ticket.",
+            ephemeral=True
+        )
+
+        return
+
+    except Exception as e:
+
+        print(
+            f"[CloudAI] Ticket Error: {e}"
+        )
+
+        await interaction.followup.send(
+            "❌ Không thể tạo ticket.",
+            ephemeral=True
+        )
+
+        return
+
+    orders[interaction.user.id] = {
+
+        "name": "Chưa chọn",
+        "avatar": "Chưa chọn",
+        "topic": "Chưa chọn",
+        "personality": "Chưa chọn",
+        "features": "Chưa chọn",
+        "plan": "Chưa chọn",
+        "payment": "Chưa chọn",
+        "note": "Chưa có"
+    }
+
+    try:
+
+        await channel.send(
+            content=(
+                f"👋 Xin chào "
+                f"{interaction.user.mention}!\n\n"
+                "🤖 **Hãy cấu hình bot của bạn bên dưới:**"
+            ),
+            embed=create_order_embed(
+                interaction.user.id
+            ),
+            view=OrderPanel(
+                interaction.user.id
+            )
+        )
+
+        await channel.send(
+            "🔒 **Quản lý Ticket**",
+            view=TicketView()
+        )
+
+    except Exception as e:
+
+        print(
+            f"[CloudAI] Panel Error: {e}"
+        )
+
+        await interaction.followup.send(
+            "❌ Không thể gửi bảng đặt bot.",
+            ephemeral=True
+        )
+
+        return
+
+    await interaction.followup.send(
+        f"✅ Ticket đã được tạo: {channel.mention}",
+        ephemeral=True
     )
-
-    print(
-        f"🌐 Dashboard chạy tại port {port}"
-    )
-
-    app.run(
-        host="0.0.0.0",
-        port=port
-    )
-
-
-threading.Thread(
-    target=run_dashboard,
-    daemon=True
-).start()
-
-
-# =========================================================
-# START BOT
-# =========================================================
-
-print("🚀 Đang khởi động CloudAI...")
-
-bot.run(
-    DISCORD_TOKEN
-)
+```
