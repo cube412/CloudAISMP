@@ -2,22 +2,19 @@ import discord
 from discord.ui import Modal, TextInput
 
 
-# =========================================================
+# ============================================================
 # CẤU HÌNH
-# =========================================================
+# ============================================================
 
 OWNER_ID = 1514447473748475975
 
-# Nếu muốn ticket nằm trong một category riêng:
-# TICKET_CATEGORY_ID = 123456789012345678
-#
-# Nếu không dùng category:
+# Nếu không dùng category riêng thì để None
 TICKET_CATEGORY_ID = None
 
 
-# =========================================================
+# ============================================================
 # LƯU ĐƠN HÀNG
-# =========================================================
+# ============================================================
 
 orders = {}
 
@@ -33,15 +30,17 @@ def get_order(user_id):
             "features": "Chưa chọn",
             "plan": "Chưa chọn",
             "payment": "Chưa chọn",
-            "status": "Chưa xác nhận"
+            "card_network": "Chưa chọn",
+            "card_amount": "Chưa chọn",
+            "status": "🟡 CHỜ DUYỆT"
         }
 
     return orders[user_id]
 
 
-# =========================================================
+# ============================================================
 # EMBED ĐƠN HÀNG
-# =========================================================
+# ============================================================
 
 def create_order_embed(user_id):
 
@@ -50,8 +49,8 @@ def create_order_embed(user_id):
     embed = discord.Embed(
         title="🤖 ĐẶT BOT CLOUD AI",
         description=(
-            "Hãy cấu hình bot của bạn bằng các nút bên dưới.\n"
-            "Bạn có thể thay đổi thông tin trước khi xác nhận đơn."
+            "Hãy chọn thông tin cho bot của bạn.\n"
+            "Bạn có thể thay đổi trước khi xác nhận."
         ),
         color=0x00BFFF
     )
@@ -98,6 +97,20 @@ def create_order_embed(user_id):
         inline=True
     )
 
+    if order["payment"] == "Nạp thẻ":
+
+        embed.add_field(
+            name="🎫 Nhà mạng",
+            value=order["card_network"],
+            inline=True
+        )
+
+        embed.add_field(
+            name="💰 Mệnh giá",
+            value=order["card_amount"],
+            inline=True
+        )
+
     embed.add_field(
         name="📌 Trạng thái",
         value=order["status"],
@@ -111,22 +124,9 @@ def create_order_embed(user_id):
     return embed
 
 
-# =========================================================
-# HÀM CẬP NHẬT BẢNG
-# =========================================================
-
-async def update_order_message(interaction, user_id):
-
-    await interaction.response.edit_message(
-        content=None,
-        embed=create_order_embed(user_id),
-        view=OrderPanel(user_id)
-    )
-
-
-# =========================================================
+# ============================================================
 # MODAL TÊN
-# =========================================================
+# ============================================================
 
 class NameModal(Modal):
 
@@ -140,7 +140,7 @@ class NameModal(Modal):
 
         self.name = TextInput(
             label="Tên bot",
-            placeholder="Ví dụ: CloudAI",
+            placeholder="Ví dụ: MyAI",
             max_length=32,
             required=True
         )
@@ -151,15 +151,15 @@ class NameModal(Modal):
 
         orders[self.user_id]["name"] = self.name.value
 
-        await update_order_message(
-            interaction,
-            self.user_id
+        await interaction.response.edit_message(
+            embed=create_order_embed(self.user_id),
+            view=OrderPanel(self.user_id)
         )
 
 
-# =========================================================
+# ============================================================
 # MODAL AVATAR
-# =========================================================
+# ============================================================
 
 class AvatarModal(Modal):
 
@@ -174,7 +174,6 @@ class AvatarModal(Modal):
         self.avatar = TextInput(
             label="Link ảnh Avatar",
             placeholder="https://...",
-            max_length=500,
             required=True
         )
 
@@ -184,15 +183,15 @@ class AvatarModal(Modal):
 
         orders[self.user_id]["avatar"] = self.avatar.value
 
-        await update_order_message(
-            interaction,
-            self.user_id
+        await interaction.response.edit_message(
+            embed=create_order_embed(self.user_id),
+            view=OrderPanel(self.user_id)
         )
 
 
-# =========================================================
+# ============================================================
 # MODAL CHỦ ĐỀ
-# =========================================================
+# ============================================================
 
 class TopicModal(Modal):
 
@@ -206,7 +205,7 @@ class TopicModal(Modal):
 
         self.topic = TextInput(
             label="Chủ đề",
-            placeholder="Minecraft, Gaming, Anime...",
+            placeholder="Minecraft, Anime, Gaming...",
             max_length=100,
             required=True
         )
@@ -217,15 +216,15 @@ class TopicModal(Modal):
 
         orders[self.user_id]["topic"] = self.topic.value
 
-        await update_order_message(
-            interaction,
-            self.user_id
+        await interaction.response.edit_message(
+            embed=create_order_embed(self.user_id),
+            view=OrderPanel(self.user_id)
         )
 
 
-# =========================================================
+# ============================================================
 # MODAL TÍNH CÁCH
-# =========================================================
+# ============================================================
 
 class PersonalityModal(Modal):
 
@@ -248,19 +247,17 @@ class PersonalityModal(Modal):
 
     async def on_submit(self, interaction):
 
-        orders[self.user_id]["personality"] = (
-            self.personality.value
+        orders[self.user_id]["personality"] = self.personality.value
+
+        await interaction.response.edit_message(
+            embed=create_order_embed(self.user_id),
+            view=OrderPanel(self.user_id)
         )
 
-        await update_order_message(
-            interaction,
-            self.user_id
-        )
 
-
-# =========================================================
+# ============================================================
 # MODAL CHỨC NĂNG
-# =========================================================
+# ============================================================
 
 class FeaturesModal(Modal):
 
@@ -284,19 +281,17 @@ class FeaturesModal(Modal):
 
     async def on_submit(self, interaction):
 
-        orders[self.user_id]["features"] = (
-            self.features.value
+        orders[self.user_id]["features"] = self.features.value
+
+        await interaction.response.edit_message(
+            embed=create_order_embed(self.user_id),
+            view=OrderPanel(self.user_id)
         )
 
-        await update_order_message(
-            interaction,
-            self.user_id
-        )
 
-
-# =========================================================
+# ============================================================
 # CHỌN GÓI
-# =========================================================
+# ============================================================
 
 class PlanSelect(discord.ui.Select):
 
@@ -321,8 +316,8 @@ class PlanSelect(discord.ui.Select):
             ),
 
             discord.SelectOption(
-                label="Custom - từ 50.000đ",
-                description="Bot thiết kế theo yêu cầu",
+                label="Custom",
+                description="Bot theo yêu cầu - từ 50.000đ",
                 emoji="🔥",
                 value="Custom - từ 50.000đ"
             )
@@ -338,7 +333,7 @@ class PlanSelect(discord.ui.Select):
         orders[self.user_id]["plan"] = self.values[0]
 
         await interaction.response.edit_message(
-            content=None,
+            content="✅ Đã chọn gói!",
             embed=create_order_embed(self.user_id),
             view=OrderPanel(self.user_id)
         )
@@ -348,18 +343,16 @@ class PlanView(discord.ui.View):
 
     def __init__(self, user_id):
 
-        super().__init__(
-            timeout=60
-        )
+        super().__init__(timeout=60)
 
         self.add_item(
             PlanSelect(user_id)
         )
 
 
-# =========================================================
-# THANH TOÁN
-# =========================================================
+# ============================================================
+# CHỌN THANH TOÁN
+# ============================================================
 
 class PaymentSelect(discord.ui.Select):
 
@@ -372,22 +365,15 @@ class PaymentSelect(discord.ui.Select):
             discord.SelectOption(
                 label="Chuyển khoản",
                 description="Thanh toán bằng chuyển khoản",
-                emoji="🏦",
+                emoji="💳",
                 value="Chuyển khoản"
             ),
 
             discord.SelectOption(
-                label="Thẻ cào",
-                description="Thanh toán bằng thẻ cào",
+                label="Nạp thẻ",
+                description="Thanh toán bằng thẻ điện thoại",
                 emoji="🎫",
-                value="Thẻ cào"
-            ),
-
-            discord.SelectOption(
-                label="Chưa thanh toán",
-                description="Thanh toán sau",
-                emoji="⏳",
-                value="Chưa thanh toán"
+                value="Nạp thẻ"
             )
         ]
 
@@ -402,8 +388,18 @@ class PaymentSelect(discord.ui.Select):
 
         orders[self.user_id]["payment"] = selected
 
+        if selected == "Nạp thẻ":
+
+            await interaction.response.edit_message(
+                content="🎫 **Chọn nhà mạng:**",
+                embed=create_order_embed(self.user_id),
+                view=CardNetworkView(self.user_id)
+            )
+
+            return
+
         await interaction.response.edit_message(
-            content=None,
+            content="💳 Đã chọn chuyển khoản!",
             embed=create_order_embed(self.user_id),
             view=OrderPanel(self.user_id)
         )
@@ -413,18 +409,259 @@ class PaymentView(discord.ui.View):
 
     def __init__(self, user_id):
 
-        super().__init__(
-            timeout=60
-        )
+        super().__init__(timeout=60)
 
         self.add_item(
             PaymentSelect(user_id)
         )
 
 
-# =========================================================
+# ============================================================
+# CHỌN NHÀ MẠNG
+# ============================================================
+
+class CardNetworkSelect(discord.ui.Select):
+
+    def __init__(self, user_id):
+
+        self.user_id = user_id
+
+        options = [
+
+            discord.SelectOption(
+                label="Viettel",
+                emoji="🟢",
+                value="Viettel"
+            ),
+
+            discord.SelectOption(
+                label="VinaPhone",
+                emoji="🔵",
+                value="VinaPhone"
+            ),
+
+            discord.SelectOption(
+                label="MobiFone",
+                emoji="🔵",
+                value="MobiFone"
+            )
+        ]
+
+        super().__init__(
+            placeholder="🎫 Chọn nhà mạng",
+            options=options
+        )
+
+    async def callback(self, interaction):
+
+        orders[self.user_id]["card_network"] = self.values[0]
+
+        await interaction.response.edit_message(
+            content="💰 **Chọn mệnh giá thẻ:**",
+            embed=create_order_embed(self.user_id),
+            view=CardAmountView(self.user_id)
+        )
+
+
+class CardNetworkView(discord.ui.View):
+
+    def __init__(self, user_id):
+
+        super().__init__(timeout=60)
+
+        self.add_item(
+            CardNetworkSelect(user_id)
+        )
+
+
+# ============================================================
+# CHỌN MỆNH GIÁ
+# ============================================================
+
+class CardAmountSelect(discord.ui.Select):
+
+    def __init__(self, user_id):
+
+        self.user_id = user_id
+
+        options = [
+
+            discord.SelectOption(
+                label="10.000đ",
+                emoji="💵",
+                value="10.000đ"
+            ),
+
+            discord.SelectOption(
+                label="20.000đ",
+                emoji="💵",
+                value="20.000đ"
+            ),
+
+            discord.SelectOption(
+                label="30.000đ",
+                emoji="💵",
+                value="30.000đ"
+            ),
+
+            discord.SelectOption(
+                label="40.000đ",
+                emoji="💵",
+                value="40.000đ"
+            ),
+
+            discord.SelectOption(
+                label="50.000đ",
+                emoji="💵",
+                value="50.000đ"
+            )
+        ]
+
+        super().__init__(
+            placeholder="💰 Chọn mệnh giá",
+            options=options
+        )
+
+    async def callback(self, interaction):
+
+        orders[self.user_id]["card_amount"] = self.values[0]
+
+        await interaction.response.edit_message(
+            content="✅ Đã chọn thông tin thẻ!",
+            embed=create_order_embed(self.user_id),
+            view=OrderPanel(self.user_id)
+        )
+
+
+class CardAmountView(discord.ui.View):
+
+    def __init__(self, user_id):
+
+        super().__init__(timeout=60)
+
+        self.add_item(
+            CardAmountSelect(user_id)
+        )
+
+
+# ============================================================
+# DUYỆT ĐƠN
+# ============================================================
+
+class ApproveButton(discord.ui.Button):
+
+    def __init__(self, user_id):
+
+        self.user_id = user_id
+
+        super().__init__(
+            label="Duyệt đơn",
+            emoji="✅",
+            style=discord.ButtonStyle.success,
+            custom_id=f"cloudai_approve_{user_id}"
+        )
+
+    async def callback(self, interaction):
+
+        if interaction.user.id != OWNER_ID:
+
+            await interaction.response.send_message(
+                "❌ Bạn không có quyền duyệt đơn!",
+                ephemeral=True
+            )
+
+            return
+
+        order = get_order(self.user_id)
+
+        order["status"] = "🟢 ĐÃ DUYỆT"
+
+        await interaction.response.edit_message(
+            embed=create_order_embed(self.user_id),
+            view=AdminOrderView(self.user_id)
+        )
+
+        try:
+
+            await interaction.channel.send(
+                "✅ **Đơn hàng đã được duyệt!**\n"
+                "Khách hàng có thể tiếp tục trao đổi với chủ bot."
+            )
+
+        except discord.Forbidden:
+            pass
+
+
+# ============================================================
+# TỪ CHỐI ĐƠN
+# ============================================================
+
+class RejectButton(discord.ui.Button):
+
+    def __init__(self, user_id):
+
+        self.user_id = user_id
+
+        super().__init__(
+            label="Từ chối đơn",
+            emoji="❌",
+            style=discord.ButtonStyle.danger,
+            custom_id=f"cloudai_reject_{user_id}"
+        )
+
+    async def callback(self, interaction):
+
+        if interaction.user.id != OWNER_ID:
+
+            await interaction.response.send_message(
+                "❌ Bạn không có quyền từ chối đơn!",
+                ephemeral=True
+            )
+
+            return
+
+        order = get_order(self.user_id)
+
+        order["status"] = "🔴 ĐÃ TỪ CHỐI"
+
+        await interaction.response.edit_message(
+            embed=create_order_embed(self.user_id),
+            view=AdminOrderView(self.user_id)
+        )
+
+        try:
+
+            await interaction.channel.send(
+                "❌ **Đơn hàng đã bị từ chối.**\n"
+                "Khách hàng có thể trao đổi với chủ bot để biết thêm thông tin."
+            )
+
+        except discord.Forbidden:
+            pass
+
+
+# ============================================================
+# VIEW CHO OWNER
+# ============================================================
+
+class AdminOrderView(discord.ui.View):
+
+    def __init__(self, user_id):
+
+        super().__init__(timeout=None)
+
+        self.add_item(
+            ApproveButton(user_id)
+        )
+
+        self.add_item(
+            RejectButton(user_id)
+        )
+
+
+# ============================================================
 # XÁC NHẬN ĐƠN
-# =========================================================
+# ============================================================
 
 class ConfirmButton(discord.ui.Button):
 
@@ -441,9 +678,7 @@ class ConfirmButton(discord.ui.Button):
 
     async def callback(self, interaction):
 
-        order = get_order(
-            self.user_id
-        )
+        order = get_order(self.user_id)
 
         missing = []
 
@@ -463,6 +698,15 @@ class ConfirmButton(discord.ui.Button):
 
                 missing.append(label)
 
+        # Nếu chọn nạp thẻ
+        if order["payment"] == "Nạp thẻ":
+
+            if order["card_network"] == "Chưa chọn":
+                missing.append("Nhà mạng")
+
+            if order["card_amount"] == "Chưa chọn":
+                missing.append("Mệnh giá thẻ")
+
         if missing:
 
             await interaction.response.send_message(
@@ -476,37 +720,37 @@ class ConfirmButton(discord.ui.Button):
 
             return
 
-        # ---------------------------------------------
-        # CẬP NHẬT TRẠNG THÁI
-        # ---------------------------------------------
+        order["status"] = "🟡 CHỜ DUYỆT"
 
-        order["status"] = "🟡 CHỜ XỬ LÝ"
-
-        # ---------------------------------------------
-        # THÔNG BÁO KHÁCH
-        # ---------------------------------------------
+        # ====================================================
+        # KHÁCH
+        # ====================================================
 
         await interaction.response.send_message(
             "✅ **Đơn hàng đã được gửi!**\n"
-            "⏳ Vui lòng chờ chủ bot kiểm tra.",
+            "⏳ Vui lòng chờ chủ bot duyệt đơn.",
             ephemeral=True
         )
 
-        # ---------------------------------------------
-        # EMBED ĐƠN HÀNG
-        # ---------------------------------------------
+        # ====================================================
+        # EMBED CHO OWNER
+        # ====================================================
 
         embed = discord.Embed(
             title="🔔 ĐƠN BOT MỚI",
-            description=(
-                "Có khách vừa gửi một đơn đặt bot."
-            ),
+            description="Có khách vừa gửi một đơn đặt bot.",
             color=0x00BFFF
         )
 
         embed.add_field(
             name="👤 Khách hàng",
             value=interaction.user.mention,
+            inline=False
+        )
+
+        embed.add_field(
+            name="🆔 ID khách",
+            value=str(interaction.user.id),
             inline=False
         )
 
@@ -552,9 +796,23 @@ class ConfirmButton(discord.ui.Button):
             inline=True
         )
 
+        if order["payment"] == "Nạp thẻ":
+
+            embed.add_field(
+                name="🎫 Nhà mạng",
+                value=order["card_network"],
+                inline=True
+            )
+
+            embed.add_field(
+                name="💰 Mệnh giá",
+                value=order["card_amount"],
+                inline=True
+            )
+
         embed.add_field(
             name="📌 Trạng thái",
-            value="🟡 CHỜ XỬ LÝ",
+            value="🟡 CHỜ DUYỆT",
             inline=False
         )
 
@@ -562,25 +820,28 @@ class ConfirmButton(discord.ui.Button):
             text="CloudAI Order System"
         )
 
-        # ---------------------------------------------
-        # GỬI VÀO TICKET
-        # ---------------------------------------------
+        # ====================================================
+        # GỬI EMBED VÀO TICKET
+        # ====================================================
 
         try:
 
             await interaction.channel.send(
-                embed=embed
+                embed=embed,
+                view=AdminOrderView(
+                    self.user_id
+                )
             )
 
         except discord.Forbidden:
 
             print(
-                "[CloudAI] Không có quyền gửi tin nhắn."
+                "[CloudAI] Không thể gửi đơn vào ticket."
             )
 
-        # ---------------------------------------------
-        # GỬI CHO OWNER
-        # ---------------------------------------------
+        # ====================================================
+        # GỬI DM OWNER
+        # ====================================================
 
         owner = interaction.guild.get_member(
             OWNER_ID
@@ -591,19 +852,22 @@ class ConfirmButton(discord.ui.Button):
             try:
 
                 await owner.send(
-                    embed=embed
+                    embed=embed,
+                    view=AdminOrderView(
+                        self.user_id
+                    )
                 )
 
             except discord.Forbidden:
 
                 print(
-                    "[CloudAI] Không thể gửi DM cho OWNER."
+                    "[CloudAI] Không thể gửi DM OWNER."
                 )
 
 
-# =========================================================
+# ============================================================
 # BẢNG ĐẶT BOT
-# =========================================================
+# ============================================================
 
 class OrderPanel(discord.ui.View):
 
@@ -648,9 +912,9 @@ class OrderPanel(discord.ui.View):
         )
 
 
-# =========================================================
+# ============================================================
 # NÚT ĐẶT TÊN
-# =========================================================
+# ============================================================
 
 class NameButton(discord.ui.Button):
 
@@ -672,9 +936,9 @@ class NameButton(discord.ui.Button):
         )
 
 
-# =========================================================
+# ============================================================
 # NÚT AVATAR
-# =========================================================
+# ============================================================
 
 class AvatarButton(discord.ui.Button):
 
@@ -696,9 +960,9 @@ class AvatarButton(discord.ui.Button):
         )
 
 
-# =========================================================
+# ============================================================
 # NÚT CHỦ ĐỀ
-# =========================================================
+# ============================================================
 
 class TopicButton(discord.ui.Button):
 
@@ -720,9 +984,9 @@ class TopicButton(discord.ui.Button):
         )
 
 
-# =========================================================
+# ============================================================
 # NÚT TÍNH CÁCH
-# =========================================================
+# ============================================================
 
 class PersonalityButton(discord.ui.Button):
 
@@ -744,9 +1008,9 @@ class PersonalityButton(discord.ui.Button):
         )
 
 
-# =========================================================
+# ============================================================
 # NÚT CHỨC NĂNG
-# =========================================================
+# ============================================================
 
 class FeaturesButton(discord.ui.Button):
 
@@ -768,9 +1032,9 @@ class FeaturesButton(discord.ui.Button):
         )
 
 
-# =========================================================
+# ============================================================
 # NÚT CHỌN GÓI
-# =========================================================
+# ============================================================
 
 class PlanButton(discord.ui.Button):
 
@@ -794,9 +1058,9 @@ class PlanButton(discord.ui.Button):
         )
 
 
-# =========================================================
+# ============================================================
 # NÚT THANH TOÁN
-# =========================================================
+# ============================================================
 
 class PaymentButton(discord.ui.Button):
 
@@ -820,9 +1084,9 @@ class PaymentButton(discord.ui.Button):
         )
 
 
-# =========================================================
+# ============================================================
 # ĐÓNG TICKET
-# =========================================================
+# ============================================================
 
 class TicketView(discord.ui.View):
 
@@ -857,20 +1121,12 @@ class TicketView(discord.ui.View):
             "🔒 Đang đóng ticket..."
         )
 
-        try:
-
-            await interaction.channel.delete()
-
-        except discord.Forbidden:
-
-            print(
-                "[CloudAI] Không có quyền xóa ticket."
-            )
+        await interaction.channel.delete()
 
 
-# =========================================================
+# ============================================================
 # NÚT ĐẶT BOT
-# =========================================================
+# ============================================================
 
 class OrderView(discord.ui.View):
 
@@ -907,17 +1163,15 @@ class OrderView(discord.ui.View):
 
             return
 
-        # =================================================
+        # ====================================================
         # TÊN TICKET
-        # =================================================
+        # ====================================================
 
-        ticket_name = (
-            f"ticket-{interaction.user.id}"
-        )
+        ticket_name = f"ticket-{interaction.user.id}"
 
-        # =================================================
+        # ====================================================
         # KIỂM TRA TICKET CŨ
-        # =================================================
+        # ====================================================
 
         for channel in guild.text_channels:
 
@@ -930,9 +1184,9 @@ class OrderView(discord.ui.View):
 
                 return
 
-        # =================================================
-        # QUYỀN TICKET
-        # =================================================
+        # ====================================================
+        # QUYỀN
+        # ====================================================
 
         overwrites = {
 
@@ -950,9 +1204,9 @@ class OrderView(discord.ui.View):
                 )
         }
 
-        # =================================================
-        # QUYỀN BOT
-        # =================================================
+        # ====================================================
+        # QUYỀN CHO BOT
+        # ====================================================
 
         bot_member = guild.me
 
@@ -968,9 +1222,9 @@ class OrderView(discord.ui.View):
                 )
             )
 
-        # =================================================
+        # ====================================================
         # QUYỀN OWNER
-        # =================================================
+        # ====================================================
 
         owner = guild.get_member(
             OWNER_ID
@@ -987,9 +1241,9 @@ class OrderView(discord.ui.View):
                 )
             )
 
-        # =================================================
+        # ====================================================
         # CATEGORY
-        # =================================================
+        # ====================================================
 
         category = None
 
@@ -999,52 +1253,9 @@ class OrderView(discord.ui.View):
                 TICKET_CATEGORY_ID
             )
 
-            if category is not None:
-                overwrites = dict(
-                    category.overwrites
-                )
-
-                overwrites[guild.default_role] = (
-                    discord.PermissionOverwrite(
-                        view_channel=False
-                    )
-                )
-
-                overwrites[interaction.user] = (
-                    discord.PermissionOverwrite(
-                        view_channel=True,
-                        send_messages=True,
-                        read_message_history=True,
-                        embed_links=True
-                    )
-                )
-
-                if bot_member:
-
-                    overwrites[bot_member] = (
-                        discord.PermissionOverwrite(
-                            view_channel=True,
-                            send_messages=True,
-                            read_message_history=True,
-                            embed_links=True,
-                            manage_channels=True
-                        )
-                    )
-
-                if owner:
-
-                    overwrites[owner] = (
-                        discord.PermissionOverwrite(
-                            view_channel=True,
-                            send_messages=True,
-                            read_message_history=True,
-                            embed_links=True
-                        )
-                    )
-
-        # =================================================
+        # ====================================================
         # TẠO TICKET
-        # =================================================
+        # ====================================================
 
         try:
 
@@ -1059,7 +1270,7 @@ class OrderView(discord.ui.View):
 
             await interaction.followup.send(
                 "❌ **CloudAI không có quyền tạo kênh!**\n\n"
-                "Hãy cấp cho role CloudAI quyền:\n"
+                "Hãy cấp cho bot:\n"
                 "• Xem kênh\n"
                 "• Gửi tin nhắn\n"
                 "• Đọc lịch sử tin nhắn\n"
@@ -1084,9 +1295,9 @@ class OrderView(discord.ui.View):
 
             return
 
-        # =================================================
+        # ====================================================
         # TẠO ĐƠN
-        # =================================================
+        # ====================================================
 
         orders[interaction.user.id] = {
 
@@ -1097,27 +1308,28 @@ class OrderView(discord.ui.View):
             "features": "Chưa chọn",
             "plan": "Chưa chọn",
             "payment": "Chưa chọn",
-            "status": "Chưa xác nhận"
+            "card_network": "Chưa chọn",
+            "card_amount": "Chưa chọn",
+            "status": "🟡 CHỜ DUYỆT"
         }
 
-        # =================================================
+        # ====================================================
         # EMBED
-        # =================================================
+        # ====================================================
 
         embed = create_order_embed(
             interaction.user.id
         )
 
-        # =================================================
+        # ====================================================
         # GỬI BẢNG
-        # =================================================
+        # ====================================================
 
         try:
 
             await channel.send(
                 content=(
-                    f"👋 Xin chào "
-                    f"{interaction.user.mention}!\n\n"
+                    f"👋 Xin chào {interaction.user.mention}!\n\n"
                     "🤖 **Hãy cấu hình bot của bạn bên dưới:**"
                 ),
                 embed=embed,
@@ -1160,9 +1372,9 @@ class OrderView(discord.ui.View):
 
             return
 
-        # =================================================
+        # ====================================================
         # THÔNG BÁO
-        # =================================================
+        # ====================================================
 
         await interaction.followup.send(
             f"✅ Ticket đã được tạo: {channel.mention}",
