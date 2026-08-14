@@ -25,7 +25,6 @@ class CloudCommands(app_commands.Group):
         self,
         interaction: discord.Interaction
     ):
-
         await interaction.response.send_message(
             f"🏓 Pong!\n"
             f"Latency: {round(interaction.client.latency * 1000)} ms"
@@ -169,6 +168,66 @@ class CloudCommands(app_commands.Group):
         )
 
     # =========================
+    # VIP AI
+    # =========================
+
+    @app_commands.command(
+        name="vipai",
+        description="AI nâng cao dành cho gói VIP 40K"
+    )
+    @app_commands.describe(
+        question="Nhập câu hỏi"
+    )
+    async def vipai(
+        self,
+        interaction: discord.Interaction,
+        question: str
+    ):
+
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "❌ Lệnh này chỉ dùng được trong server.",
+                ephemeral=True
+            )
+            return
+
+        current_plan = get_server_plan(
+            interaction.guild.id
+        )
+
+        if current_plan != "40K":
+            await interaction.response.send_message(
+                "🔒 **VIP AI bị khóa**\n\n"
+                f"📦 Gói hiện tại: **{current_plan}**\n\n"
+                "👑 Cần nâng lên **VIP 40K** để sử dụng.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.defer()
+
+        try:
+            answer = await ask_ai(
+                str(interaction.user.id),
+                "[VIP AI] " + question
+            )
+
+            if len(answer) > 2000:
+                answer = answer[:1990] + "..."
+
+            await interaction.followup.send(
+                "👑 **CloudAI VIP**\n\n"
+                + answer
+            )
+
+        except Exception as e:
+            print(f"[CloudAI] VIP AI Error: {e}")
+
+            await interaction.followup.send(
+                "❌ VIP AI đang gặp lỗi, thử lại sau."
+            )
+
+    # =========================
     # HELP
     # =========================
 
@@ -220,6 +279,12 @@ class CloudCommands(app_commands.Group):
         embed.add_field(
             name="/cloud vip",
             value="Kiểm tra quyền VIP",
+            inline=False
+        )
+
+        embed.add_field(
+            name="/cloud vipai",
+            value="AI nâng cao dành cho VIP 40K",
             inline=False
         )
 
@@ -369,6 +434,12 @@ class CloudCommands(app_commands.Group):
         embed.add_field(
             name="👑 VIP",
             value="/cloud vip",
+            inline=False
+        )
+
+        embed.add_field(
+            name="🤖 VIP AI",
+            value="/cloud vipai",
             inline=False
         )
 
