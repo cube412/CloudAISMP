@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 
 from ai import ask_ai
-from orders import OrderView
+from orders import OrderView, get_server_plan
 
 
 class CloudCommands(app_commands.Group):
@@ -29,6 +29,75 @@ class CloudCommands(app_commands.Group):
         await interaction.response.send_message(
             f"🏓 Pong!\n"
             f"Latency: {round(interaction.client.latency * 1000)} ms"
+        )
+
+    # =========================
+    # PLAN
+    # =========================
+
+    @app_commands.command(
+        name="plan",
+        description="Xem gói CloudAI của server"
+    )
+    async def plan(
+        self,
+        interaction: discord.Interaction
+    ):
+
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "❌ Lệnh này chỉ dùng được trong server.",
+                ephemeral=True
+            )
+            return
+
+        current_plan = get_server_plan(
+            interaction.guild.id
+        )
+
+        if current_plan == "40K":
+            title = "🔵 GÓI VIP 40K"
+            description = (
+                "Server của bạn đang sử dụng **CloudAI VIP 40K**.\n\n"
+                "✨ Các tính năng VIP đã được mở."
+            )
+            color = 0x3498DB
+
+        elif current_plan == "20K":
+            title = "🟢 GÓI BASIC 20K"
+            description = (
+                "Server của bạn đang sử dụng **CloudAI Basic 20K**.\n\n"
+                "🤖 Các tính năng Basic đang hoạt động."
+            )
+            color = 0x2ECC71
+
+        else:
+            title = "📦 GÓI CLOUD AI"
+            description = (
+                f"Server đang sử dụng gói: **{current_plan}**"
+            )
+            color = 0x00BFFF
+
+        embed = discord.Embed(
+            title=title,
+            description=description,
+            color=color
+        )
+
+        embed.add_field(
+            name="🏠 Server",
+            value=interaction.guild.name,
+            inline=False
+        )
+
+        embed.add_field(
+            name="📦 Gói hiện tại",
+            value=current_plan,
+            inline=True
+        )
+
+        await interaction.response.send_message(
+            embed=embed
         )
 
     # =========================
@@ -71,6 +140,12 @@ class CloudCommands(app_commands.Group):
         embed.add_field(
             name="/cloud helpmc",
             value="Hướng dẫn Minecraft",
+            inline=False
+        )
+
+        embed.add_field(
+            name="/cloud plan",
+            value="Xem gói CloudAI của server",
             inline=False
         )
 
@@ -208,6 +283,12 @@ class CloudCommands(app_commands.Group):
         embed.add_field(
             name="⚡ TPS",
             value="/cloud tps",
+            inline=False
+        )
+
+        embed.add_field(
+            name="📦 Gói",
+            value="/cloud plan",
             inline=False
         )
 
