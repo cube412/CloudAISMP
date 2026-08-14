@@ -101,6 +101,74 @@ class CloudCommands(app_commands.Group):
         )
 
     # =========================
+    # VIP TEST
+    # =========================
+
+    @app_commands.command(
+        name="vip",
+        description="Kiểm tra quyền VIP CloudAI"
+    )
+    async def vip(
+        self,
+        interaction: discord.Interaction
+    ):
+
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "❌ Lệnh này chỉ dùng được trong server.",
+                ephemeral=True
+            )
+            return
+
+        current_plan = get_server_plan(
+            interaction.guild.id
+        )
+
+        if current_plan != "40K":
+            embed = discord.Embed(
+                title="🔒 Tính năng VIP",
+                description=(
+                    "❌ Server này chưa có quyền VIP.\n\n"
+                    f"📦 Gói hiện tại: **{current_plan}**\n\n"
+                    "💎 Nâng cấp lên **VIP 40K** "
+                    "để mở tính năng này."
+                ),
+                color=0xE74C3C
+            )
+
+            await interaction.response.send_message(
+                embed=embed
+            )
+            return
+
+        embed = discord.Embed(
+            title="👑 CloudAI VIP",
+            description=(
+                "✅ **Quyền VIP đã được xác nhận!**\n\n"
+                "🎉 Server của bạn đang sử dụng "
+                "**CloudAI VIP 40K**.\n\n"
+                "✨ Tính năng VIP đã được mở."
+            ),
+            color=0x3498DB
+        )
+
+        embed.add_field(
+            name="🏠 Server",
+            value=interaction.guild.name,
+            inline=False
+        )
+
+        embed.add_field(
+            name="📦 Gói",
+            value="🔵 VIP 40K",
+            inline=True
+        )
+
+        await interaction.response.send_message(
+            embed=embed
+        )
+
+    # =========================
     # HELP
     # =========================
 
@@ -146,6 +214,12 @@ class CloudCommands(app_commands.Group):
         embed.add_field(
             name="/cloud plan",
             value="Xem gói CloudAI của server",
+            inline=False
+        )
+
+        embed.add_field(
+            name="/cloud vip",
+            value="Kiểm tra quyền VIP",
             inline=False
         )
 
@@ -289,6 +363,12 @@ class CloudCommands(app_commands.Group):
         embed.add_field(
             name="📦 Gói",
             value="/cloud plan",
+            inline=False
+        )
+
+        embed.add_field(
+            name="👑 VIP",
+            value="/cloud vip",
             inline=False
         )
 
