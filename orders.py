@@ -1,40 +1,152 @@
+```python
 import discord
 from discord.ui import Modal, TextInput
 from datetime import datetime
+import json
+import os
 
-# ==============================
-# CẤU HÌNH
-# ==============================
+
+# =========================================================
+# CONFIG
+# =========================================================
 
 OWNER_ID = 1514447473748475975
+
+# Nếu muốn ticket nằm trong một category cụ thể:
+# điền ID category vào đây.
+# Không dùng category thì để None.
 TICKET_CATEGORY_ID = None
+
+PLANS_FILE = "plans.json"
+
+
+# =========================================================
+# ORDER DATA
+# =========================================================
 
 orders = {}
 
 
-# ==============================
-# ORDER DATA
-# ==============================
+def new_order():
+    return {
+        "guild_id": None,
+        "guild_name": "Chưa xác định",
+
+        "name": "Chưa chọn",
+        "avatar": "Chưa chọn",
+        "topic": "Chưa chọn",
+        "personality": "Chưa chọn",
+        "features": "Chưa chọn",
+
+        "plan": "Chưa chọn",
+
+        "payment": "Chưa chọn",
+        "card_type": "Chưa chọn",
+        "amount": "Chưa chọn",
+        "serial": "Chưa nhập",
+        "code": "Chưa nhập",
+
+        "status": "🟡 CHỜ XỬ LÝ"
+    }
+
 
 def get_order(user_id):
     if user_id not in orders:
-        orders[user_id] = {
-            "name": "Chưa chọn",
-            "avatar": "Chưa chọn",
-            "topic": "Chưa chọn",
-            "personality": "Chưa chọn",
-            "features": "Chưa chọn",
-            "plan": "Chưa chọn",
-            "payment": "Chưa chọn",
-            "card_type": "Chưa chọn",
-            "amount": "Chưa chọn",
-            "serial": "Chưa nhập",
-            "code": "Chưa nhập",
-            "status": "🟡 CHỜ XỬ LÝ"
-        }
+        orders[user_id] = new_order()
 
     return orders[user_id]
 
+
+# =========================================================
+# PLAN SYSTEM
+# =========================================================
+
+def load_plans():
+    if not os.path.exists(PLANS_FILE):
+        return {}
+
+    try:
+        with open(
+            PLANS_FILE,
+            "r",
+            encoding="utf-8"
+        ) as f:
+            return json.load(f)
+
+    except Exception as e:
+        print(f"[CloudAI] Không đọc được plans.json: {e}")
+        return {}
+
+
+def save_plans(plans):
+    try:
+        with open(
+            PLANS_FILE,
+            "w",
+            encoding="utf-8"
+        ) as f:
+            json.dump(
+                plans,
+                f,
+                ensure_ascii=False,
+                indent=4
+            )
+
+    except Exception as e:
+        print(f"[CloudAI] Không lưu được plans.json: {e}")
+
+
+def normalize_plan(plan):
+    plan = str(plan).lower()
+
+    if "basic" in plan or "20.000" in plan or "20k" in plan:
+        return "20K"
+
+    if "vip" in plan or "40.000" in plan or "40k" in plan:
+        return "40K"
+
+    if "custom" in plan:
+        return "CUSTOM"
+
+    return "UNKNOWN"
+
+
+def set_server_plan(guild_id, plan):
+    if guild_id is None:
+        return
+
+    plans = load_plans()
+
+    plans[str(guild_id)] = {
+        "plan": normalize_plan(plan),
+        "updated_at": datetime.now().isoformat()
+    }
+
+    save_plans(plans)
+
+    print(
+        f"[CloudAI] Server {guild_id} -> "
+        f"{normalize_plan(plan)}"
+    )
+
+
+def get_server_plan(guild_id):
+    plans = load_plans()
+
+    data = plans.get(str(guild_id))
+
+    if not data:
+        return "20K"
+
+    if isinstance(data, dict):
+        return data.get("plan", "20K")
+
+    return str(data)
+
+
+# =========================================================
+# ORDER EMBED
+# =========================================================
 
 def create_order_embed(user_id):
     order = get_order(user_id)
@@ -45,72 +157,32 @@ def create_order_embed(user_id):
         color=0x00BFFF
     )
 
-    embed.add_field(
-        name="🤖 Tên bot",
-        value=order["name"],
-        inline=False
-    )
+    fields = [
+        ("🤖 Tên bot", order["name"], False),
+        ("🖼️ Avatar", order["avatar"], False),
+        ("🎯 Chủ đề", order["topic"], False),
+        ("😎 Tính cách", order["personality"], False),
+        ("⚙️ Chức năng", order["features"], False),
+        ("📦 Gói", order["plan"], True),
+        ("💳 Thanh toán", order["payment"], True),
+        ("💰 Số tiền", order["amount"], True),
+        ("🏷️ Loại thẻ", order["card_type"], True),
+        ("📌 Trạng thái", order["status"], False)
+    ]
 
-    embed.add_field(
-        name="🖼️ Avatar",
-        value=order["avatar"],
-        inline=False
-    )
-
-    embed.add_field(
-        name="🎯 Chủ đề",
-        value=order["topic"],
-        inline=False
-    )
-
-    embed.add_field(
-        name="😎 Tính cách",
-        value=order["personality"],
-        inline=False
-    )
-
-    embed.add_field(
-        name="⚙️ Chức năng",
-        value=order["features"],
-        inline=False
-    )
-
-    embed.add_field(
-        name="📦 Gói",
-        value=order["plan"],
-        inline=True
-    )
-
-    embed.add_field(
-        name="💳 Thanh toán",
-        value=order["payment"],
-        inline=True
-    )
-
-    embed.add_field(
-        name="💰 Số tiền",
-        value=order["amount"],
-        inline=True
-    )
-
-    embed.add_field(
-        name="🏷️ Loại thẻ",
-        value=order["card_type"],
-        inline=True
-    )
-
-    embed.add_field(
-        name="📌 Trạng thái",
-        value=order["status"],
-        inline=False
-    )
+    for name, value, inline in fields:
+        embed.add_field(
+            name=name,
+            value=str(value),
+            inline=inline
+        )
 
     return embed
 
 
-# ==============================
-# MODAL NHẬP THÔNG TIN
-# ==============================
+# =========================================================
+# SIMPLE MODAL
+# =========================================================
 
 class SimpleModal(Modal):
 
@@ -145,7 +217,9 @@ class SimpleModal(Modal):
 
     async def on_submit(self, interaction):
 
-        orders[self.user_id][self.key] = self.field.value
+        order = get_order(self.user_id)
+
+        order[self.key] = self.field.value
 
         await interaction.response.edit_message(
             embed=create_order_embed(self.user_id),
@@ -153,14 +227,17 @@ class SimpleModal(Modal):
         )
 
 
-# ==============================
-# THANH TOÁN + THẺ CÀO
-# ==============================
+# =========================================================
+# PAYMENT MODAL
+# =========================================================
 
 class PaymentModal(Modal):
 
     def __init__(self, user_id):
-        super().__init__(title="💳 Thông tin thẻ")
+
+        super().__init__(
+            title="💳 Thông tin thẻ"
+        )
 
         self.user_id = user_id
 
@@ -214,9 +291,9 @@ class PaymentModal(Modal):
         )
 
 
-# ==============================
-# CHỌN GÓI
-# ==============================
+# =========================================================
+# PLAN SELECT
+# =========================================================
 
 class PlanSelect(discord.ui.Select):
 
@@ -254,7 +331,9 @@ class PlanSelect(discord.ui.Select):
 
     async def callback(self, interaction):
 
-        orders[self.user_id]["plan"] = self.values[0]
+        order = get_order(self.user_id)
+
+        order["plan"] = self.values[0]
 
         await interaction.response.edit_message(
             content=None,
@@ -266,6 +345,7 @@ class PlanSelect(discord.ui.Select):
 class PlanView(discord.ui.View):
 
     def __init__(self, user_id):
+
         super().__init__(timeout=60)
 
         self.add_item(
@@ -273,9 +353,9 @@ class PlanView(discord.ui.View):
         )
 
 
-# ==============================
-# NÚT THANH TOÁN
-# ==============================
+# =========================================================
+# PAYMENT BUTTON
+# =========================================================
 
 class PaymentButton(discord.ui.Button):
 
@@ -297,84 +377,28 @@ class PaymentButton(discord.ui.Button):
         )
 
 
-# ==============================
-# MODAL LÝ DO TỪ CHỐI
-# ==============================
-
-class RejectReasonModal(Modal):
-
-    def __init__(self, user_id):
-
-        super().__init__(
-            title="❌ Lý do từ chối đơn"
-        )
-
-        self.user_id = user_id
-
-        self.reason = TextInput(
-            label="Lý do từ chối",
-            placeholder="Ví dụ: Thông tin thẻ không hợp lệ",
-            style=discord.TextStyle.paragraph,
-            max_length=500,
-            required=True
-        )
-
-        self.add_item(self.reason)
-
-    async def on_submit(self, interaction):
-
-        order = get_order(self.user_id)
-
-        order["status"] = "🔴 ĐÃ TỪ CHỐI"
-
-        reason = self.reason.value
-
-        await interaction.response.send_message(
-            "❌ Đã từ chối đơn và gửi lý do cho khách."
-        )
-
-        user = interaction.client.get_user(
-            self.user_id
-        )
-
-        if user:
-
-            try:
-
-                await user.send(
-                    "❌ **Đơn đặt bot của bạn đã bị từ chối.**\n\n"
-                    f"📝 **Lý do:** {reason}"
-                )
-
-            except discord.Forbidden:
-
-                pass
-
-
-# ==============================
-# DUYỆT / TỪ CHỐI
-# ==============================
+# =========================================================
+# ORDER DECISION
+# =========================================================
 
 class OrderDecisionView(discord.ui.View):
 
     def __init__(self, user_id):
 
-        super().__init__(
-            timeout=None
-        )
+        super().__init__(timeout=None)
 
         self.user_id = user_id
+
+    # -----------------------------------------------------
+    # APPROVE
+    # -----------------------------------------------------
 
     @discord.ui.button(
         label="Duyệt đơn",
         emoji="✅",
         style=discord.ButtonStyle.success
     )
-    async def approve(
-        self,
-        interaction,
-        button
-    ):
+    async def approve(self, interaction, button):
 
         if interaction.user.id != OWNER_ID:
 
@@ -385,16 +409,56 @@ class OrderDecisionView(discord.ui.View):
 
             return
 
-        order = get_order(
-            self.user_id
-        )
+        order = get_order(self.user_id)
+
+        # Kiểm tra gói
+        if order["plan"] == "Chưa chọn":
+
+            await interaction.response.send_message(
+                "❌ Đơn này chưa chọn gói.",
+                ephemeral=True
+            )
+
+            return
+
+        # Lưu gói cho server
+        guild_id = order.get("guild_id")
+
+        if guild_id is not None:
+
+            set_server_plan(
+                guild_id,
+                order["plan"]
+            )
 
         order["status"] = "🟢 ĐÃ DUYỆT"
 
-        await interaction.response.send_message(
-            "✅ Đã duyệt đơn."
-        )
+        # Disable nút
+        for child in self.children:
 
+            if isinstance(
+                child,
+                discord.ui.Button
+            ):
+                child.disabled = True
+
+        try:
+
+            await interaction.response.edit_message(
+                embed=create_order_embed(
+                    self.user_id
+                ),
+                view=self
+            )
+
+        except Exception:
+
+            await interaction.response.send_message(
+                "✅ Đã duyệt đơn.",
+                ephemeral=True
+            )
+
+        # Gửi DM khách
         user = interaction.client.get_user(
             self.user_id
         )
@@ -403,24 +467,37 @@ class OrderDecisionView(discord.ui.View):
 
             try:
 
+                plan = normalize_plan(
+                    order["plan"]
+                )
+
                 await user.send(
-                    "✅ **Đơn đặt bot của bạn đã được duyệt!**"
+                    "✅ **Đơn đặt bot của bạn đã được duyệt!**\n\n"
+                    f"📦 Gói: **{plan}**\n"
+                    "🤖 CloudAI sẽ tiến hành cấu hình bot cho bạn."
                 )
 
             except discord.Forbidden:
 
-                pass
+                print(
+                    "[CloudAI] Không thể DM khách."
+                )
+
+        print(
+            f"[CloudAI] Đã duyệt đơn "
+            f"{self.user_id}"
+        )
+
+    # -----------------------------------------------------
+    # REJECT
+    # -----------------------------------------------------
 
     @discord.ui.button(
         label="Từ chối đơn",
         emoji="❌",
         style=discord.ButtonStyle.danger
     )
-    async def reject(
-        self,
-        interaction,
-        button
-    ):
+    async def reject(self, interaction, button):
 
         if interaction.user.id != OWNER_ID:
 
@@ -431,16 +508,61 @@ class OrderDecisionView(discord.ui.View):
 
             return
 
-        await interaction.response.send_modal(
-            RejectReasonModal(
-                self.user_id
+        order = get_order(self.user_id)
+
+        order["status"] = "🔴 ĐÃ TỪ CHỐI"
+
+        for child in self.children:
+
+            if isinstance(
+                child,
+                discord.ui.Button
+            ):
+                child.disabled = True
+
+        try:
+
+            await interaction.response.edit_message(
+                embed=create_order_embed(
+                    self.user_id
+                ),
+                view=self
             )
+
+        except Exception:
+
+            await interaction.response.send_message(
+                "❌ Đã từ chối đơn.",
+                ephemeral=True
+            )
+
+        user = interaction.client.get_user(
+            self.user_id
+        )
+
+        if user:
+
+            try:
+
+                await user.send(
+                    "❌ **Đơn đặt bot của bạn đã bị từ chối.**"
+                )
+
+            except discord.Forbidden:
+
+                print(
+                    "[CloudAI] Không thể DM khách."
+                )
+
+        print(
+            f"[CloudAI] Đã từ chối đơn "
+            f"{self.user_id}"
         )
 
 
-# ==============================
-# GỬI ĐƠN
-# ==============================
+# =========================================================
+# CONFIRM ORDER
+# =========================================================
 
 class ConfirmButton(discord.ui.Button):
 
@@ -455,14 +577,9 @@ class ConfirmButton(discord.ui.Button):
             row=3
         )
 
-    async def callback(
-        self,
-        interaction
-    ):
+    async def callback(self, interaction):
 
-        order = get_order(
-            self.user_id
-        )
+        order = get_order(self.user_id)
 
         required = {
             "name": "Tên bot",
@@ -508,6 +625,10 @@ class ConfirmButton(discord.ui.Button):
             ephemeral=True
         )
 
+        # -------------------------------------------------
+        # ORDER EMBED
+        # -------------------------------------------------
+
         embed = discord.Embed(
             title="🔔 ĐƠN BOT MỚI",
             description="Có khách vừa gửi một đơn đặt bot.",
@@ -525,6 +646,26 @@ class ConfirmButton(discord.ui.Button):
             name="🆔 User ID",
             value=str(interaction.user.id),
             inline=False
+        )
+
+        embed.add_field(
+            name="🏠 Server",
+            value=order.get(
+                "guild_name",
+                "Chưa xác định"
+            ),
+            inline=True
+        )
+
+        embed.add_field(
+            name="🆔 Server ID",
+            value=str(
+                order.get(
+                    "guild_id",
+                    "Không có"
+                )
+            ),
+            inline=True
         )
 
         embed.add_field(
@@ -597,6 +738,26 @@ class ConfirmButton(discord.ui.Button):
             text="CloudAI Order System"
         )
 
+        # -------------------------------------------------
+        # GỬI VÀO TICKET
+        # -------------------------------------------------
+
+        try:
+
+            await interaction.channel.send(
+                embed=embed
+            )
+
+        except discord.Forbidden:
+
+            print(
+                "[CloudAI] Không thể gửi embed vào ticket."
+            )
+
+        # -------------------------------------------------
+        # GỬI DM OWNER
+        # -------------------------------------------------
+
         owner = interaction.client.get_user(
             OWNER_ID
         )
@@ -637,17 +798,15 @@ class ConfirmButton(discord.ui.Button):
             )
 
 
-# ==============================
-# BẢNG ĐẶT BOT
-# ==============================
+# =========================================================
+# ORDER PANEL
+# =========================================================
 
 class OrderPanel(discord.ui.View):
 
     def __init__(self, user_id):
 
-        super().__init__(
-            timeout=None
-        )
+        super().__init__(timeout=None)
 
         self.user_id = user_id
 
@@ -684,9 +843,9 @@ class OrderPanel(discord.ui.View):
         )
 
 
-# ==============================
-# TÊN BOT
-# ==============================
+# =========================================================
+# NAME BUTTON
+# =========================================================
 
 class NameButton(discord.ui.Button):
 
@@ -701,10 +860,7 @@ class NameButton(discord.ui.Button):
             row=0
         )
 
-    async def callback(
-        self,
-        interaction
-    ):
+    async def callback(self, interaction):
 
         await interaction.response.send_modal(
             SimpleModal(
@@ -718,9 +874,9 @@ class NameButton(discord.ui.Button):
         )
 
 
-# ==============================
-# AVATAR
-# ==============================
+# =========================================================
+# AVATAR BUTTON
+# =========================================================
 
 class AvatarButton(discord.ui.Button):
 
@@ -735,10 +891,7 @@ class AvatarButton(discord.ui.Button):
             row=0
         )
 
-    async def callback(
-        self,
-        interaction
-    ):
+    async def callback(self, interaction):
 
         await interaction.response.send_modal(
             SimpleModal(
@@ -752,9 +905,9 @@ class AvatarButton(discord.ui.Button):
         )
 
 
-# ==============================
-# CHỦ ĐỀ
-# ==============================
+# =========================================================
+# TOPIC BUTTON
+# =========================================================
 
 class TopicButton(discord.ui.Button):
 
@@ -769,10 +922,7 @@ class TopicButton(discord.ui.Button):
             row=0
         )
 
-    async def callback(
-        self,
-        interaction
-    ):
+    async def callback(self, interaction):
 
         await interaction.response.send_modal(
             SimpleModal(
@@ -786,9 +936,9 @@ class TopicButton(discord.ui.Button):
         )
 
 
-# ==============================
-# TÍNH CÁCH
-# ==============================
+# =========================================================
+# PERSONALITY BUTTON
+# =========================================================
 
 class PersonalityButton(discord.ui.Button):
 
@@ -803,10 +953,7 @@ class PersonalityButton(discord.ui.Button):
             row=1
         )
 
-    async def callback(
-        self,
-        interaction
-    ):
+    async def callback(self, interaction):
 
         await interaction.response.send_modal(
             SimpleModal(
@@ -820,9 +967,9 @@ class PersonalityButton(discord.ui.Button):
         )
 
 
-# ==============================
-# CHỨC NĂNG
-# ==============================
+# =========================================================
+# FEATURES BUTTON
+# =========================================================
 
 class FeaturesButton(discord.ui.Button):
 
@@ -837,10 +984,7 @@ class FeaturesButton(discord.ui.Button):
             row=1
         )
 
-    async def callback(
-        self,
-        interaction
-    ):
+    async def callback(self, interaction):
 
         await interaction.response.send_modal(
             SimpleModal(
@@ -855,9 +999,9 @@ class FeaturesButton(discord.ui.Button):
         )
 
 
-# ==============================
-# CHỌN GÓI
-# ==============================
+# =========================================================
+# PLAN BUTTON
+# =========================================================
 
 class PlanButton(discord.ui.Button):
 
@@ -872,10 +1016,7 @@ class PlanButton(discord.ui.Button):
             row=2
         )
 
-    async def callback(
-        self,
-        interaction
-    ):
+    async def callback(self, interaction):
 
         await interaction.response.send_message(
             "📦 Chọn gói bot:",
@@ -886,9 +1027,9 @@ class PlanButton(discord.ui.Button):
         )
 
 
-# ==============================
-# TICKET
-# ==============================
+# =========================================================
+# TICKET VIEW
+# =========================================================
 
 class TicketView(discord.ui.View):
 
@@ -929,12 +1070,14 @@ class TicketView(discord.ui.View):
 
         except discord.Forbidden:
 
-            pass
+            print(
+                "[CloudAI] Không có quyền đóng ticket."
+            )
 
 
-# ==============================
-# NÚT ĐẶT BOT
-# ==============================
+# =========================================================
+# MAIN ORDER VIEW
+# =========================================================
 
 class OrderView(discord.ui.View):
 
@@ -975,6 +1118,10 @@ class OrderView(discord.ui.View):
             f"ticket-{interaction.user.id}"
         )
 
+        # -------------------------------------------------
+        # KIỂM TRA TICKET CŨ
+        # -------------------------------------------------
+
         for channel in guild.text_channels:
 
             if channel.name == ticket_name:
@@ -985,6 +1132,10 @@ class OrderView(discord.ui.View):
                 )
 
                 return
+
+        # -------------------------------------------------
+        # PERMISSIONS
+        # -------------------------------------------------
 
         overwrites = {
 
@@ -1031,6 +1182,10 @@ class OrderView(discord.ui.View):
                 )
             )
 
+        # -------------------------------------------------
+        # CATEGORY
+        # -------------------------------------------------
+
         category = None
 
         if TICKET_CATEGORY_ID is not None:
@@ -1038,6 +1193,10 @@ class OrderView(discord.ui.View):
             category = guild.get_channel(
                 TICKET_CATEGORY_ID
             )
+
+        # -------------------------------------------------
+        # CREATE TICKET
+        # -------------------------------------------------
 
         try:
 
@@ -1070,20 +1229,23 @@ class OrderView(discord.ui.View):
 
             return
 
-        orders[interaction.user.id] = {
-            "name": "Chưa chọn",
-            "avatar": "Chưa chọn",
-            "topic": "Chưa chọn",
-            "personality": "Chưa chọn",
-            "features": "Chưa chọn",
-            "plan": "Chưa chọn",
-            "payment": "Chưa chọn",
-            "card_type": "Chưa chọn",
-            "amount": "Chưa chọn",
-            "serial": "Chưa nhập",
-            "code": "Chưa nhập",
-            "status": "🟡 CHỜ XỬ LÝ"
-        }
+        # -------------------------------------------------
+        # CREATE ORDER
+        # -------------------------------------------------
+
+        orders[interaction.user.id] = new_order()
+
+        orders[interaction.user.id]["guild_id"] = (
+            guild.id
+        )
+
+        orders[interaction.user.id]["guild_name"] = (
+            guild.name
+        )
+
+        # -------------------------------------------------
+        # SEND ORDER PANEL
+        # -------------------------------------------------
 
         try:
 
@@ -1115,7 +1277,19 @@ class OrderView(discord.ui.View):
 
             return
 
+        # -------------------------------------------------
+        # SUCCESS
+        # -------------------------------------------------
+
         await interaction.followup.send(
-            f"✅ Ticket đã được tạo: {channel.mention}",
+            f"✅ Ticket đã được tạo: "
+            f"{channel.mention}",
             ephemeral=True
         )
+
+        print(
+            f"[CloudAI] Tạo ticket "
+            f"{ticket_name} "
+            f"cho {interaction.user.id}"
+        )
+```
