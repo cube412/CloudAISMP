@@ -1,4 +1,4 @@
-```python
+
 import discord
 from discord.ui import Modal, TextInput
 from datetime import datetime
