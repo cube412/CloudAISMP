@@ -68,10 +68,14 @@ def get_order(user_id):
             "features": "Chưa chọn",
             "plan": "Chưa chọn",
             "payment": "Chưa chọn",
-            "card_type": "Chưa chọn",
+            "payment_reference": "Chưa nhập",
+            "payment_note": "Không có",
+            "card_type": "Không áp dụng",
             "amount": "Chưa chọn",
-            "serial": "Chưa nhập",
-            "code": "Chưa nhập",
+            "payment_reference": "Chưa nhập",
+            "payment_note": "Không có",
+            "serial": "Không áp dụng",
+            "code": "Không lưu",
             "status": "🟡 CHỜ XỬ LÝ",
             "order_id": f"CLD-{str(user_id)[-4:]}",
             "guild_id": None
@@ -98,7 +102,7 @@ def create_order_embed(user_id):
         ("📦 Gói", order["plan"], True),
         ("💳 Thanh toán", order["payment"], True),
         ("💰 Số tiền", order["amount"], True),
-        ("🏷️ Loại thẻ", order["card_type"], True),
+        ("🔎 Mã giao dịch", order.get("payment_reference", "Chưa nhập"), False),
         ("📌 Trạng thái", order["status"], False),
     ]
 
@@ -140,51 +144,55 @@ class SimpleModal(Modal):
 
 class PaymentModal(Modal):
     def __init__(self, user_id):
-        super().__init__(title="💳 Thông tin thẻ")
+        super().__init__(title="💳 Xác nhận thanh toán")
         self.user_id = user_id
 
-        self.card_type = TextInput(
-            label="Loại thẻ",
-            placeholder="Viettel, Vinaphone, Mobifone...",
+        self.method = TextInput(
+            label="Phương thức thanh toán",
+            placeholder="Ví dụ: Chuyển khoản",
             max_length=30,
             required=True
         )
 
         self.amount = TextInput(
-            label="Mệnh giá",
+            label="Số tiền",
             placeholder="Ví dụ: 40.000",
             max_length=20,
             required=True
         )
 
-        self.serial = TextInput(
-            label="Số seri",
-            placeholder="Nhập số seri",
-            max_length=50,
-            required=True
-        )
-
-        self.code = TextInput(
-            label="Mã thẻ",
-            placeholder="Nhập mã thẻ",
+        self.reference = TextInput(
+            label="Mã giao dịch",
+            placeholder="Mã giao dịch / nội dung chuyển khoản",
             max_length=100,
             required=True
         )
 
-        self.add_item(self.card_type)
+        self.note = TextInput(
+            label="Ghi chú",
+            placeholder="Ví dụ: Thanh toán đơn CLD-1234",
+            max_length=200,
+            required=False
+        )
+
+        self.add_item(self.method)
         self.add_item(self.amount)
-        self.add_item(self.serial)
-        self.add_item(self.code)
+        self.add_item(self.reference)
+        self.add_item(self.note)
 
     async def on_submit(self, interaction):
         order = get_order(self.user_id)
 
-        order["payment"] = "Thẻ cào"
-        order["card_type"] = self.card_type.value
+        order["payment"] = self.method.value
         order["amount"] = self.amount.value
-        order["serial"] = self.serial.value
-        order["code"] = self.code.value
-        order["status"] = "🟡 CHỜ BẠN KIỂM TRA"
+        order["payment_reference"] = self.reference.value
+        order["payment_note"] = self.note.value or "Không có"
+        order["status"] = "🟡 CHỜ XÁC NHẬN THANH TOÁN"
+
+        # Keep compatibility with the existing order structure.
+        order["card_type"] = "Không áp dụng"
+        order["serial"] = "Không áp dụng"
+        order["code"] = "Không lưu"
 
         await interaction.response.edit_message(
             embed=create_order_embed(self.user_id),
@@ -367,9 +375,13 @@ class ConfirmButton(discord.ui.Button):
             )
             return
 
-        if order["payment"] == "Chưa chọn":
+        if (
+            order.get("payment") == "Chưa chọn"
+            or order.get("amount") == "Chưa chọn"
+            or order.get("payment_reference", "Chưa nhập") == "Chưa nhập"
+        ):
             await interaction.response.send_message(
-                "❌ Bạn chưa chọn thông tin thanh toán.",
+                "❌ Bạn chưa hoàn tất thông tin thanh toán.",
                 ephemeral=True
             )
             return
@@ -429,23 +441,18 @@ class ConfirmButton(discord.ui.Button):
             inline=True
         )
         embed.add_field(
-            name="🏷️ Loại thẻ",
-            value=order["card_type"],
-            inline=True
-        )
-        embed.add_field(
-            name="💰 Mệnh giá",
+            name="💰 Số tiền",
             value=order["amount"],
             inline=True
         )
         embed.add_field(
-            name="🔢 SERI",
-            value=order["serial"],
+            name="🔎 Mã giao dịch",
+            value=order.get("payment_reference", "Chưa nhập"),
             inline=False
         )
         embed.add_field(
-            name="🔐 MÃ THẺ",
-            value=order["code"],
+            name="📝 Ghi chú thanh toán",
+            value=order.get("payment_note", "Không có"),
             inline=False
         )
         embed.add_field(
@@ -782,10 +789,14 @@ class OrderView(discord.ui.View):
             "features": "Chưa chọn",
             "plan": "Chưa chọn",
             "payment": "Chưa chọn",
-            "card_type": "Chưa chọn",
+            "payment_reference": "Chưa nhập",
+            "payment_note": "Không có",
+            "card_type": "Không áp dụng",
             "amount": "Chưa chọn",
-            "serial": "Chưa nhập",
-            "code": "Chưa nhập",
+            "payment_reference": "Chưa nhập",
+            "payment_note": "Không có",
+            "serial": "Không áp dụng",
+            "code": "Không lưu",
             "status": "🟡 CHỜ XỬ LÝ",
             "order_id": f"CLD-{str(interaction.user.id)[-4:]}",
             "guild_id": guild.id
