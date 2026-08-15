@@ -42,7 +42,6 @@ class CloudCommands(app_commands.Group):
         self,
         interaction: discord.Interaction
     ):
-
         if interaction.guild is None:
             await interaction.response.send_message(
                 "❌ Lệnh này chỉ dùng được trong server.",
@@ -100,7 +99,7 @@ class CloudCommands(app_commands.Group):
         )
 
     # =========================
-    # VIP TEST
+    # VIP
     # =========================
 
     @app_commands.command(
@@ -111,7 +110,6 @@ class CloudCommands(app_commands.Group):
         self,
         interaction: discord.Interaction
     ):
-
         if interaction.guild is None:
             await interaction.response.send_message(
                 "❌ Lệnh này chỉ dùng được trong server.",
@@ -129,8 +127,7 @@ class CloudCommands(app_commands.Group):
                 description=(
                     "❌ Server này chưa có quyền VIP.\n\n"
                     f"📦 Gói hiện tại: **{current_plan}**\n\n"
-                    "💎 Nâng cấp lên **VIP 40K** "
-                    "để mở tính năng này."
+                    "💎 Nâng cấp lên **VIP 40K** để mở tính năng này."
                 ),
                 color=0xE74C3C
             )
@@ -144,23 +141,9 @@ class CloudCommands(app_commands.Group):
             title="👑 CloudAI VIP",
             description=(
                 "✅ **Quyền VIP đã được xác nhận!**\n\n"
-                "🎉 Server của bạn đang sử dụng "
-                "**CloudAI VIP 40K**.\n\n"
-                "✨ Tính năng VIP đã được mở."
+                "🎉 Server của bạn đang sử dụng **CloudAI VIP 40K**."
             ),
             color=0x3498DB
-        )
-
-        embed.add_field(
-            name="🏠 Server",
-            value=interaction.guild.name,
-            inline=False
-        )
-
-        embed.add_field(
-            name="📦 Gói",
-            value="🔵 VIP 40K",
-            inline=True
         )
 
         await interaction.response.send_message(
@@ -183,7 +166,6 @@ class CloudCommands(app_commands.Group):
         interaction: discord.Interaction,
         question: str
     ):
-
         if interaction.guild is None:
             await interaction.response.send_message(
                 "❌ Lệnh này chỉ dùng được trong server.",
@@ -198,7 +180,7 @@ class CloudCommands(app_commands.Group):
         if current_plan != "40K":
             await interaction.response.send_message(
                 "🔒 **VIP AI bị khóa**\n\n"
-                f"📦 Gói hiện tại: **{current_plan}**\n\n"
+                f"📦 Gói hiện tại: **{current_plan}**\n"
                 "👑 Cần nâng lên **VIP 40K** để sử dụng.",
                 ephemeral=True
             )
@@ -216,8 +198,7 @@ class CloudCommands(app_commands.Group):
                 answer = answer[:1990] + "..."
 
             await interaction.followup.send(
-                "👑 **CloudAI VIP**\n\n"
-                + answer
+                "👑 **CloudAI VIP**\n\n" + answer
             )
 
         except Exception as e:
@@ -226,6 +207,92 @@ class CloudCommands(app_commands.Group):
             await interaction.followup.send(
                 "❌ VIP AI đang gặp lỗi, thử lại sau."
             )
+
+    # =========================
+    # VOICE JOIN
+    # =========================
+
+    @app_commands.command(
+        name="join",
+        description="Cho CloudAI vào phòng voice"
+    )
+    async def join(
+        self,
+        interaction: discord.Interaction
+    ):
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "❌ Lệnh này chỉ dùng trong server.",
+                ephemeral=True
+            )
+            return
+
+        if not interaction.user.voice:
+            await interaction.response.send_message(
+                "❌ Bạn cần vào một phòng voice trước.",
+                ephemeral=True
+            )
+            return
+
+        channel = interaction.user.voice.channel
+
+        try:
+            if interaction.guild.voice_client:
+                await interaction.guild.voice_client.move_to(channel)
+            else:
+                await channel.connect()
+
+            await interaction.response.send_message(
+                f"🎙️ CloudAI đã vào **{channel.name}**!"
+            )
+
+        except discord.Forbidden:
+            await interaction.response.send_message(
+                "❌ Bot không có quyền **Connect** hoặc **Speak** trong phòng này.",
+                ephemeral=True
+            )
+
+        except Exception as e:
+            print(f"[CloudAI] Voice Join Error: {e}")
+
+            await interaction.response.send_message(
+                "❌ Không thể vào phòng voice.",
+                ephemeral=True
+            )
+
+    # =========================
+    # VOICE LEAVE
+    # =========================
+
+    @app_commands.command(
+        name="leave",
+        description="Cho CloudAI rời phòng voice"
+    )
+    async def leave(
+        self,
+        interaction: discord.Interaction
+    ):
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "❌ Lệnh này chỉ dùng trong server.",
+                ephemeral=True
+            )
+            return
+
+        voice_client = interaction.guild.voice_client
+
+        if voice_client is None:
+            await interaction.response.send_message(
+                "❌ CloudAI hiện không ở trong phòng voice.",
+                ephemeral=True
+            )
+            return
+
+        await voice_client.disconnect()
+
+        await interaction.response.send_message(
+            "👋 CloudAI đã rời phòng voice."
+        )
 
     # =========================
     # HELP
@@ -239,7 +306,6 @@ class CloudCommands(app_commands.Group):
         self,
         interaction: discord.Interaction
     ):
-
         embed = discord.Embed(
             title="🤖 CloudAI",
             description="Danh sách lệnh CloudAI",
@@ -272,7 +338,7 @@ class CloudCommands(app_commands.Group):
 
         embed.add_field(
             name="/cloud plan",
-            value="Xem gói CloudAI của server",
+            value="Xem gói CloudAI",
             inline=False
         )
 
@@ -284,7 +350,19 @@ class CloudCommands(app_commands.Group):
 
         embed.add_field(
             name="/cloud vipai",
-            value="AI nâng cao dành cho VIP 40K",
+            value="AI nâng cao VIP 40K",
+            inline=False
+        )
+
+        embed.add_field(
+            name="/cloud join",
+            value="Cho CloudAI vào phòng voice",
+            inline=False
+        )
+
+        embed.add_field(
+            name="/cloud leave",
+            value="Cho CloudAI rời phòng voice",
             inline=False
         )
 
@@ -314,7 +392,6 @@ class CloudCommands(app_commands.Group):
         interaction: discord.Interaction,
         question: str
     ):
-
         await interaction.response.defer()
 
         answer = await ask_ai(
@@ -345,7 +422,6 @@ class CloudCommands(app_commands.Group):
         interaction: discord.Interaction,
         question: str
     ):
-
         await interaction.response.defer()
 
         answer = await ask_ai(
@@ -372,7 +448,6 @@ class CloudCommands(app_commands.Group):
         self,
         interaction: discord.Interaction
     ):
-
         embed = discord.Embed(
             title="⚡ TPS Minecraft",
             description=(
@@ -400,7 +475,6 @@ class CloudCommands(app_commands.Group):
         self,
         interaction: discord.Interaction
     ):
-
         embed = discord.Embed(
             title="🎮 Minecraft Assistant",
             description="CloudAI hỗ trợ Minecraft",
@@ -431,18 +505,6 @@ class CloudCommands(app_commands.Group):
             inline=False
         )
 
-        embed.add_field(
-            name="👑 VIP",
-            value="/cloud vip",
-            inline=False
-        )
-
-        embed.add_field(
-            name="🤖 VIP AI",
-            value="/cloud vipai",
-            inline=False
-        )
-
         await interaction.response.send_message(
             embed=embed
         )
@@ -459,7 +521,6 @@ class CloudCommands(app_commands.Group):
         self,
         interaction: discord.Interaction
     ):
-
         embed = discord.Embed(
             title="🛒 Đặt CloudAI",
             description=(
