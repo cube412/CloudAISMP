@@ -3,6 +3,8 @@ from discord.ui import Modal, TextInput
 from datetime import datetime
 from pathlib import Path
 import json
+import os
+import aiohttp
 
 # =========================================================
 # CLOUDAI STORE - ORDERS SYSTEM
@@ -331,8 +333,8 @@ def load_bot_configs():
         return {}
 
 
-def provision_bot_template(order):
-    """Tạo cấu hình instance từ Bot Template. Không lưu Bot Token."""
+async def provision_bot_template(order):
+    """Tạo config cho Bot Template và gửi sang Railway nếu đã cấu hình webhook."""
     plan = normalize_plan(order.get("plan"))
     config = {
         "order_id": order.get("order_id"),
@@ -350,10 +352,46 @@ def provision_bot_template(order):
         "status": "provisioned",
         "created_at": datetime.utcnow().isoformat(),
     }
+
+    # Backup local.
     configs = load_bot_configs()
     configs[str(order.get("order_id"))] = config
     save_bot_configs(configs)
-    return config
+
+    # Gửi sang Railway provisioning service nếu đã đặt URL.
+    webhook = os.getenv("PROVISIONING_WEBHOOK_URL", "").strip()
+    if not webhook:
+        return config
+
+    secret = os.getenv("PROVISIONING_SECRET", "").strip()
+    headers = {"Content-Type": "application/json"}
+    if secret:
+        headers["Authorization"] = f"Bearer {secret}"
+
+    try:
+        timeout = aiohttp.ClientTimeout(total=15)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(
+                webhook, json=config, headers=headers
+            ) as response:
+                if response.status >= 400:
+                    body = await response.text()
+                    raise RuntimeError(
+                        f"HTTP {response.status}: {body[:300]}"
+                    )
+
+        config["status"] = "sent_to_railway"
+        configs[str(order.get("order_id"))] = config
+        save_bot_configs(configs)
+        return config
+
+    except Exception as e:
+        print(f"[CloudAI] Railway provisioning error: {e}")
+        config["status"] = "local_only"
+        config["provision_error"] = str(e)[:500]
+        configs[str(order.get("order_id"))] = config
+        save_bot_configs(configs)
+        return config
 
 
 def format_plan_features(plan):
@@ -804,7 +842,9 @@ class DeployClientModal(Modal):
         # Provision từ Bot Template theo đúng gói khách đã mua.
         # Không lưu Bot Token trong orders.json.
         try:
-            provision_bot_template(get_order(self.user_id))
+            result = await provision_bot_template(get_order(self.user_id))
+            if result.get("status") == "local_only":
+                print("[CloudAI] Config chỉ lưu local; chưa nối Railway webhook.")
         except Exception as e:
             print(f"[CloudAI] Provisioning error: {e}")
 
